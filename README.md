@@ -7,9 +7,10 @@ It contains some command-line commands that are listed below, as well as utility
 ## Commands:
 `python run_fabian.py`
 ```
-usage: run_fabian.py [-h] --config CONFIG --out OUT [--FetalBrainModelPath FETALBRAINMODELPATH] [--FetalModel FETALMODEL] [--WMheterogeneity {0,1}]
-                     [--GA GA] [--Orientation {1,2,3}] [--B0 {1.5,3.0}] [--FlipAngle FLIPANGLE] [--TEeff TEEFF] [--SDnoise SDNOISE]
+usage: run_fabian.py [-h] --config CONFIG --out OUT --model MODEL [--FetalModel FETALMODEL] [--WMheterogeneity {0,1}] [--GA GA]
+                     [--Orientation {1,2,3}] [--B0 {1.5,3.0}] [--FlipAngle FLIPANGLE] [--TEeff TEEFF] [--SDnoise SDNOISE]
                      [--Shift_mm SHIFT_MM] [--SliceThickness SLICETHICKNESS] [--MotionLevel {0,1,2,3,4,5}] [--MotionBounds [MOTIONBOUNDS]]
+
 
 
 optional arguments:
@@ -75,9 +76,14 @@ Required libraries:
 `pip install matlabengine`
 
 ## Available configuration files:
-- haste_config.json: the template to the haste sequence. 
+- haste_default_config.json: the template to the haste sequence. 
+- haste_isotropic_config.json: the template to generate isotropic images of 1.
 
 *IMPORTANT NOTES*: default simulation deviates from typical haste sequence as FOV is set to 300x300 instead of 360x360. Base resolution and Reconstruction matrix ar set to 250 so that fabian can generate high isotropic 1.2x1.2x1.2mm images without getting out of memory.
+
+## Atlas Directory Structure
+The atlas directory should be structured as in `./STA/` directory (with subdirectories for each GA)
+
 
 ## ToDos:
 - [   ] Change input fetal brain model handling: input the image input file path rather than a directory

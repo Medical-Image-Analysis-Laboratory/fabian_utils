@@ -57,14 +57,24 @@ class Simulation:
         elif param["range"] is not None:
             return random.uniform(*param['range'])
         else:
-            print(param)
-            return None
+            raise ValueError("No value is parsed by the user nor default value or range are available in the config.json file you provided.")
     
+    def to_json(self):
+        json_data = {}
+        for attribute, value in vars(self).items():
+            json_data[attribute] = value
+        
+        json_dir = self.OutputFolder + 'code/'
+        if not os.path.exists(json_dir):
+            os.makedirs(json_dir)
+        json_flnm = 'sub-' + str(self.SubID) + '_ses-' +  f"{self.SesID:02}" + '_run-' +  f"{self.RunID:02}" + '_sim_config.json'
+        with open(json_dir + json_flnm, "w") as json_file:
+            json.dump(json_data, json_file, indent=4)
+        print(f"Simulation parameters written to : {json_dir + json_flnm}")
     #def set_subID(path):
 
     #def set_ga(path):
 
-    
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Configuration Parser')
     parser.add_argument('--config', help='Path to the configuration file', required=True)
@@ -101,8 +111,8 @@ def call_fabian(sim):
     try:
         eng = matlab.engine.start_matlab()
         eng.rng("shuffle")
-        eng.addpath('/home/mroulet/Documents/MATLAB/FaBiAN/Utilities')   
-        eng.addpath('/home/mroulet/Documents/MATLAB/FaBiAN/')        
+        eng.addpath('matlab/Utilities')   
+        eng.addpath('matlab/')        
         [T1_WM,T2_WM,T1_GM,T2_GM,T1_CSF,T2_CSF] = eng.set_brainproperties(sim.B0,nargout=6)
         
         # Set motion translation and rotation amplitude, and ratio of corrupted slice number
@@ -180,10 +190,10 @@ def is_model_in(model_path):
 #**********************************************************
 def main():
     
-    # Set subID, sesID and runID
+    # Only sample code below: Set sesID and runID according to your nomenclature
     
     args = parse_arguments()
-    ids = {'SubID': args.GA, 'SesID': 1, 'RunID': 2}
+    ids = {'SubID': args.GA, 'SesID': 1, 'RunID': 1} # SubID only for STA atlas to be modified asap
     sim = Simulation(args,ids)
     
     for attribute, value in vars(sim).items():
@@ -191,6 +201,8 @@ def main():
 
     if is_model_in(sim.FetalBrainModelPath):
         call_fabian(sim)
+        sim.to_json()
+        
     else:
         print('Missing files in directory: simulation is skipped')
     
