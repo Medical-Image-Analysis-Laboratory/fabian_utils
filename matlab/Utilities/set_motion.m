@@ -1,5 +1,5 @@
 function [Motion] = set_motion(motion_level, varargin)
-%S ET_MOTION set the transaltion and rotation amplitude as well as the
+% SET_MOTION set the transaltion and rotation amplitude as well as the
 % number of corrupted slice number and pass the variable to FaBIAN main and
 % motion_transform functions.
 

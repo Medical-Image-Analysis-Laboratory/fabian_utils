@@ -196,69 +196,117 @@ function [ref_T1map, ref_T2map] = tissue_to_MR(        fetal_model, ...
                                                              T2_GM, ...
                                                             T1_CSF, ...
                                                             T2_CSF,...
-                                                            FetalBrainModelPath)
+                                                         ClipValue,...
+                                               FetalBrainModelPath)
 
 % Input check
-if nargin < 20
+if nargin < 21
     error('Missing input(s).');
-elseif nargin > 20
+elseif nargin > 21
     error('Too many inputs!');
 end
 
+% % Assign T1 and T2 values to every fetal tissue according to its label
+% switch fetal_model
+%     case 'STA'
+%         Tissue(37,:) = [T1_GM, T2_GM];
+%         Tissue(38,:) = [T1_GM, T2_GM];
+%         Tissue(41,:) = [T1_GM, T2_GM];
+%         Tissue(42,:) = [T1_GM, T2_GM];
+%         Tissue(71,:) = [T1_GM, T2_GM];
+%         Tissue(72,:) = [T1_GM, T2_GM];
+%         Tissue(73,:) = [T1_GM, T2_GM];
+%         Tissue(74,:) = [T1_GM, T2_GM];
+%         Tissue(77,:) = [T1_GM, T2_GM];
+%         Tissue(78,:) = [T1_GM, T2_GM];
+%         Tissue(91,:) = [T1_WM, T2_WM];
+%         Tissue(92,:) = [T1_CSF, T2_CSF];
+%         Tissue(93,:) = [T1_CSF, T2_CSF];
+%         Tissue(94,:) = [T1_WM, T2_WM];
+%         Tissue(100,:) = [T1_WM, T2_WM];
+%         Tissue(101,:) = [T1_WM, T2_WM];
+%         Tissue(108,:) = [T1_GM, T2_GM];
+%         Tissue(109,:) = [T1_GM, T2_GM];
+%         Tissue(110,:) = [T1_WM, T2_WM];
+%         Tissue(111,:) = [T1_WM, T2_WM];
+%         Tissue(112,:) = [T1_GM, T2_GM];
+%         Tissue(113,:) = [T1_GM, T2_GM];
+%         Tissue(114,:) = [T1_WM, T2_WM];
+%         Tissue(115,:) = [T1_WM, T2_WM];
+%         Tissue(116,:) = [T1_WM, T2_WM];
+%         Tissue(117,:) = [T1_WM, T2_WM];
+%         Tissue(118,:) = [T1_WM, T2_WM];
+%         Tissue(119,:) = [T1_WM, T2_WM];
+%         Tissue(120,:) = [T1_WM, T2_WM];
+%         Tissue(121,:) = [T1_WM, T2_WM];
+%         Tissue(122,:) = [T1_WM, T2_WM];
+%         Tissue(123,:) = [T1_WM, T2_WM];
+%         Tissue(124,:) = [T1_CSF, T2_CSF];
+%         Tissue(125,:) = [T1_WM, T2_WM];
+%     case 'FeTA_CHUV'
+%         Tissue(1,:) = [T1_CSF, T2_CSF]; %CSF
+%         Tissue(2,:) = [T1_GM, T2_GM];   %GM
+%         Tissue(3,:) = [T1_WM, T2_WM];   %WM
+%         Tissue(4,:) = [T1_CSF, T2_CSF]; %lateral ventricles
+%         Tissue(5,:) = [T1_WM, T2_WM];   %cerebellum
+%         Tissue(6,:) = [T1_GM, T2_GM];   %subcortical GM
+%         Tissue(7,:) = [T1_WM, T2_WM];   %brainstem
+%     case 'FeTA' %refined FeTA dataset (Lucas Fidon, FeTA2021_Release1and2Corrected_v4)
+%         Tissue(1,:) = [T1_WM, T2_WM];   %WM (excluding corpus callosum)
+%         Tissue(2,:) = [T1_CSF, T2_CSF]; %intra-axial CSF
+%         Tissue(3,:) = [T1_WM, T2_WM];   %cerebellum
+%         Tissue(4,:) = [T1_CSF, T2_CSF]; %extra-axial CSF
+%         Tissue(5,:) = [T1_GM, T2_GM];   %cortical GM
+%         Tissue(6,:) = [T1_GM, T2_GM];   %deep GM
+%         Tissue(7,:) = [T1_WM, T2_WM];   %brainstem
+%         Tissue(8,:) = [T1_WM, T2_WM];   %corpus callosum
+% end
+
+% MARGAUX BELOW
 % Assign T1 and T2 values to every fetal tissue according to its label
-switch fetal_model
-    case 'STA'
-        Tissue(37,:) = [T1_GM, T2_GM];
-        Tissue(38,:) = [T1_GM, T2_GM];
-        Tissue(41,:) = [T1_GM, T2_GM];
-        Tissue(42,:) = [T1_GM, T2_GM];
-        Tissue(71,:) = [T1_GM, T2_GM];
-        Tissue(72,:) = [T1_GM, T2_GM];
-        Tissue(73,:) = [T1_GM, T2_GM];
-        Tissue(74,:) = [T1_GM, T2_GM];
-        Tissue(77,:) = [T1_GM, T2_GM];
-        Tissue(78,:) = [T1_GM, T2_GM];
-        Tissue(91,:) = [T1_WM, T2_WM];
-        Tissue(92,:) = [T1_CSF, T2_CSF];
-        Tissue(93,:) = [T1_CSF, T2_CSF];
-        Tissue(94,:) = [T1_WM, T2_WM];
-        Tissue(100,:) = [T1_WM, T2_WM];
-        Tissue(101,:) = [T1_WM, T2_WM];
-        Tissue(108,:) = [T1_GM, T2_GM];
-        Tissue(109,:) = [T1_GM, T2_GM];
-        Tissue(110,:) = [T1_WM, T2_WM];
-        Tissue(111,:) = [T1_WM, T2_WM];
-        Tissue(112,:) = [T1_GM, T2_GM];
-        Tissue(113,:) = [T1_GM, T2_GM];
-        Tissue(114,:) = [T1_WM, T2_WM];
-        Tissue(115,:) = [T1_WM, T2_WM];
-        Tissue(116,:) = [T1_WM, T2_WM];
-        Tissue(117,:) = [T1_WM, T2_WM];
-        Tissue(118,:) = [T1_WM, T2_WM];
-        Tissue(119,:) = [T1_WM, T2_WM];
-        Tissue(120,:) = [T1_WM, T2_WM];
-        Tissue(121,:) = [T1_WM, T2_WM];
-        Tissue(122,:) = [T1_WM, T2_WM];
-        Tissue(123,:) = [T1_WM, T2_WM];
-        Tissue(124,:) = [T1_CSF, T2_CSF];
-        Tissue(125,:) = [T1_WM, T2_WM];
-    case 'FeTA_CHUV'
-        Tissue(1,:) = [T1_CSF, T2_CSF]; %CSF
-        Tissue(2,:) = [T1_GM, T2_GM];   %GM
-        Tissue(3,:) = [T1_WM, T2_WM];   %WM
-        Tissue(4,:) = [T1_CSF, T2_CSF]; %lateral ventricles
-        Tissue(5,:) = [T1_WM, T2_WM];   %cerebellum
-        Tissue(6,:) = [T1_GM, T2_GM];   %subcortical GM
-        Tissue(7,:) = [T1_WM, T2_WM];   %brainstem
-    case 'FeTA' %refined FeTA dataset (Lucas Fidon, FeTA2021_Release1and2Corrected_v4)
-        Tissue(1,:) = [T1_WM, T2_WM];   %WM (excluding corpus callosum)
-        Tissue(2,:) = [T1_CSF, T2_CSF]; %intra-axial CSF
-        Tissue(3,:) = [T1_WM, T2_WM];   %cerebellum
-        Tissue(4,:) = [T1_CSF, T2_CSF]; %extra-axial CSF
-        Tissue(5,:) = [T1_GM, T2_GM];   %cortical GM
-        Tissue(6,:) = [T1_GM, T2_GM];   %deep GM
-        Tissue(7,:) = [T1_WM, T2_WM];   %brainstem
-        Tissue(8,:) = [T1_WM, T2_WM];   %corpus callosum
+if fetal_model == "STA"
+    Tissue(37,:) = [T1_GM, T2_GM];
+    Tissue(38,:) = [T1_GM, T2_GM];
+    Tissue(41,:) = [T1_GM, T2_GM];
+    Tissue(42,:) = [T1_GM, T2_GM];
+    Tissue(71,:) = [T1_GM, T2_GM];
+    Tissue(72,:) = [T1_GM, T2_GM];
+    Tissue(73,:) = [T1_GM, T2_GM];
+    Tissue(74,:) = [T1_GM, T2_GM];
+    Tissue(77,:) = [T1_GM, T2_GM];
+    Tissue(78,:) = [T1_GM, T2_GM];
+    Tissue(91,:) = [T1_WM, T2_WM];
+    Tissue(92,:) = [T1_CSF, T2_CSF];
+    Tissue(93,:) = [T1_CSF, T2_CSF];
+    Tissue(94,:) = [T1_WM, T2_WM];
+    Tissue(100,:) = [T1_WM, T2_WM];
+    Tissue(101,:) = [T1_WM, T2_WM];
+    Tissue(108,:) = [T1_GM, T2_GM];
+    Tissue(109,:) = [T1_GM, T2_GM];
+    Tissue(110,:) = [T1_WM, T2_WM];
+    Tissue(111,:) = [T1_WM, T2_WM];
+    Tissue(112,:) = [T1_GM, T2_GM];
+    Tissue(113,:) = [T1_GM, T2_GM];
+    Tissue(114,:) = [T1_WM, T2_WM];
+    Tissue(115,:) = [T1_WM, T2_WM];
+    Tissue(116,:) = [T1_WM, T2_WM];
+    Tissue(117,:) = [T1_WM, T2_WM];
+    Tissue(118,:) = [T1_WM, T2_WM];
+    Tissue(119,:) = [T1_WM, T2_WM];
+    Tissue(120,:) = [T1_WM, T2_WM];
+    Tissue(121,:) = [T1_WM, T2_WM];
+    Tissue(122,:) = [T1_WM, T2_WM];
+    Tissue(123,:) = [T1_WM, T2_WM];
+    Tissue(124,:) = [T1_CSF, T2_CSF];
+    Tissue(125,:) = [T1_WM, T2_WM];
+else
+    Tissue(1,:) = [T1_CSF, T2_CSF]; %CSF
+    Tissue(2,:) = [T1_GM, T2_GM];   %GM
+    Tissue(3,:) = [T1_WM, T2_WM];   %WM
+    Tissue(4,:) = [T1_CSF, T2_CSF]; %lateral ventricles
+    Tissue(5,:) = [T1_WM, T2_WM];   %cerebellum
+    Tissue(6,:) = [T1_GM, T2_GM];   %subcortical GM
+    Tissue(7,:) = [T1_WM, T2_WM];   %brainstem
 end
 
 % Computation time
@@ -306,7 +354,8 @@ if WM_heterogeneity == 1
                                                    orientation, ...
                                                 SamplingFactor, ...
                                            InterpolationMethod,...
-                                           FetalBrainModelPath);
+                                           FetalBrainModelPath,...
+                                           ClipValue);
 end
 
 % Display computation time

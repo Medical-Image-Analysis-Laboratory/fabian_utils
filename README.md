@@ -17,7 +17,7 @@ optional arguments:
   -h, --help                                  show this help message and exit
   --config CONFIG                             Path to the configuration file
   --out OUT                                   Path to the output directory
-  --FetalBrainModelPath FETALBRAINMODELPATH   Fetal Brain Model Path
+  --model MODEL                               Path to the atlas fetal brain model directory ../STA/
   --FetalModel FETALMODEL                     Fetal Model: [STA] (default = STA)
   --WMheterogeneity {0,1}                     WM Heterogeneity: 1 - ON, 0 - OFF (default=1)
   --GA GA                                     Gestational age range: [21,35] weeks (default=random)
@@ -33,7 +33,7 @@ optional arguments:
 
 ```
 
-Notes: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range.
+Notes: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_default_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range.
 
 *Current Status*: For now `python run_fabian.py` only runs with FetModel= 'STA'. Eventually, you'll be able to run the script for any dataset by providing a path to a specific segmentation maps directory and a json specifying the GA (to be continued).
 
@@ -86,13 +86,12 @@ The atlas directory should be structured as in `./STA/` directory (with subdirec
 
 
 ## ToDos:
-- [   ] Change input fetal brain model handling: input the image input file path rather than a directory
-- [   ] Define dataset structure (name of directory = subID, directory should contain _tissue.nii.gz, _pve_X.nii.gz files and a json with GA).
-- [   ] Enable simulation on all kinds of datasets -> use Andrès fsl_clustering script. Prior work on label maps required though (Vlad on it).
-- [   ] input random brain properties using set_brainproperties.m 
-- [   ] Generate json file for each simulation listing parameters
+- [   ] Change input fetal brain model handling: input a directory that contains all required file to run the sim (segmentation and pve_X)
+- [   ] Enable simulation on all kinds of datasets -> use Andrès fsl_clustering script. 
+- [ x ] Prior work on label maps required though (Vlad on it).
+- [ x ] input random brain properties using set_brainproperties.m 
+- [ x ] Generate json file for each simulation listing parameters
 - [   ] dive into K-Space Sampling function to optimize memory handling
-- [   ] when reading a subID from a different dataset than STA -> we need to input the related GA 
 
 *************************************************************************************
 

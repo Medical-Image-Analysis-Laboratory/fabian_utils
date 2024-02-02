@@ -37,23 +37,21 @@ end
 
 % Load segmented high-resolution anatomical MR images of the fetal brain at
 % gestational age GA
-switch model
-    case 'STA'
-        nifti_info = niftiinfo(strcat(path, 'STA', sprintf('%02s', num2str(sub_id)), '_tissue.nii.gz'));
-        Fetal_Brain = niftiread(nifti_info);
-    case 'FeTA_CHUV'
-        nifti_info = niftiinfo(strcat(path, sub_id, '/anat/', sub_id, '_rec-mial_dseg.nii.gz'));
-        Fetal_Brain = niftiread(nifti_info);
-    case 'FeTA'
-        nifti_info = niftiinfo(strcat(path, sub_id, '/parcellation.nii.gz'));
-        Fetal_Brain = niftiread(nifti_info);
-    case 'Custom'
-        % note finalized: here path = path to the STA directory ./STA/STAXX
-        atlas_id = strsplit(path,'/');
-        fprintf(strcat(path,atlas_id{end-1}, '_tissue.nii.gz'));
-        nifti_info = niftiinfo(strcat(path,atlas_id{end-1}, '_tissue.nii.gz'));
-        Fetal_Brain = niftiread(nifti_info);
-        clear atlas_id
-end
+% switch model
+%     case 'STA'
+%         nifti_info = niftiinfo(strcat(path, 'STA', sprintf('%02s', num2str(sub_id)), '_tissue.nii.gz'));
+%         Fetal_Brain = niftiread(nifti_info);
+%     case 'FeTA_CHUV'
+%         nifti_info = niftiinfo(strcat(path, sub_id, '/anat/', sub_id, '_rec-mial_dseg.nii.gz'));
+%         Fetal_Brain = niftiread(nifti_info);
+%     case 'FeTA'
+%         nifti_info = niftiinfo(strcat(path, sub_id, '/parcellation.nii.gz'));
+%         Fetal_Brain = niftiread(nifti_info);
+% end
+% MARGAUX BELOW
+atlas_id = strsplit(path,'/');
+nifti_info = niftiinfo(strcat(path,atlas_id{end-1}, '_tissue.nii.gz'));
+Fetal_Brain = niftiread(nifti_info);
+clear atlas_id
 
 end

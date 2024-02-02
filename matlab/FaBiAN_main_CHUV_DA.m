@@ -129,11 +129,12 @@ function FSEimages = FaBiAN_main_CHUV_DA(FetalBrainModelPath, ...
                                                        T2_GM, ...
                                                       T1_CSF, ...
                                                       T2_CSF,...
+                                                   ClipValue,...
                                                           GA,...
                                                       varargin)
 
 % Input check
-if nargin < 38
+if nargin < 40
     error('Missing input(s).');
 %elseif nargin > 38
 %    error('Too many inputs.');
@@ -445,6 +446,7 @@ InterpolationMethod = 'nearest';
                                                   T2_GM, ...
                                                  T1_CSF, ...
                                                  T2_CSF,...
+                                              ClipValue,...
                                                  FetalBrainModelPath);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -482,14 +484,18 @@ SliceProfile = gausswin(round(SliceThickness/SubunitRes), 2*sqrt(2*log(2))/(Slic
 
 % No slice profile in between slices
 Sl_to_Sl = SliceProfile;
+
 Sl_to_Sl(length(SliceProfile)+1:length(SliceProfile)+round(SliceGap/SubunitRes)) = ones(round(SliceGap/SubunitRes),1);
 
 % The number of slices is currently set to ensure that the maximum size in
 % mm of the image matrix is an integer number of the slice thickness +
 % slice gap
 NbSlices = ceil(max([size(T2decay,1), size(T2decay,2), size(T2decay,3)/SamplingFactor]) * SimResReo(3) / SubunitRes / length(Sl_to_Sl));
+%NbSlices = ceil(size(T2decay,3)/SamplingFactor * SimResReo(3) / SubunitRes / length(Sl_to_Sl));
 % Corresponding matrix size
 T2decayMaxDim = ceil(NbSlices * length(Sl_to_Sl) / (SimResReo(3) / SubunitRes));
+
+
 
 % Zero-padding of the T2decay array so that it is 3D isotropic - This makes
 % some calculations below a bit easier
@@ -588,6 +594,8 @@ InterleavedSlices_index = interleaved_scheme(NbSlices);
                                                        T2_GM, ...
                                                       T1_CSF, ...
                                                       T2_CSF);
+
+
 SqueezeSlVolume = squeeze(SlVolume(:,:,:,30));
 SlVolume_resized = Resize_Volume(SqueezeSlVolume, [round(FOVRead/SimResReo(1)), round(FOVPhaseOversampling/SimResReo(2)), NbSlices]);
 
@@ -699,6 +707,7 @@ LabelMap = imresize(SimLabels, [size(KSpace,1), round(size(KSpace,2)/PhaseResolu
 % Resize the simulated images to the desired dimensions (especially, do not
 % reconstruct the phase oversampling)
 AcqDim = [ReconMatrix ReconMatrix NbSlices];
+
 if any(size(FSEimages))~=AcqDim
     ReconFSEimages = Resize_Volume(FSEimages, AcqDim);
     ReconLabelMap = Resize_Volume(LabelMap, AcqDim);
@@ -962,14 +971,14 @@ if SimCrop=="true"
     niftiwrite(CropMask, OutputMaskCrop, CropMaskNiiinfo, 'Compressed', true);
     
 
-    % Save the RefT2map - Margaux
-    if Orientation == 3
-        RefT2mapNiiinfo = niftiinfo(strcat(FetalBrainModelPath, 'STA', sprintf('%02s', num2str(SubID)), '_tissue.nii.gz'));
-        if isa(RefT2map, ModelNiiinfo.Datatype)==0
-            RefT2mapNiiinfo.Datatype = class(RefT2map);
-        end
-        niftiwrite(RefT2map,OutputRefT2map,RefT2mapNiiinfo,'Compressed', true);
-    end
+    % % Save the RefT2map - Margaux
+    % if Orientation == 3
+    %     RefT2mapNiiinfo = niftiinfo(strcat(FetalBrainModelPath, 'STA', sprintf('%02s', num2str(SubID)), '_tissue.nii.gz'));
+    %     if isa(RefT2map, ModelNiiinfo.Datatype)==0
+    %         RefT2mapNiiinfo.Datatype = class(RefT2map);
+    %     end
+    %     niftiwrite(RefT2map,OutputRefT2map,RefT2mapNiiinfo,'Compressed', true);
+    % end
     
 end
 

@@ -82,12 +82,13 @@ function [WM_T1map, WM_T2map] = WM_maturation(              model, ...
                                                       orientation, ...
                                                    SamplingFactor, ...
                                               InterpolationMethod, ...
-                                              FetalBrainModelPath)
+                                              FetalBrainModelPath,...
+                                              ClipValue)
 
 % Input check
-if nargin < 14
+if nargin < 15
     error('Missing input(s).');
-elseif nargin > 14
+elseif nargin > 15
     error('Too many inputs!');
 end
 
@@ -98,40 +99,61 @@ unwrap_ref_T2map = ref_T2map(:);
 
 if isequal(segmentation, 'FAST')
     %Import and set up Partial Volume Maps from FAST segmentation tool
-    switch model
-        case 'STA'
-%             path = '.\data\atlas_fast_clustering\STA';
-%             path = 'C:\Users\admin\Desktop\Andrés\CODE AND DATA TO SIMULATE DIFERENT DATASETS\GMM and FAST segmentations on White matter\FAST_Clustering\STA';
-            % path =  '/home/mroulet/Documents/MATLAB/fabian_margaux/dataverse_files_2/STA';
-            path = FetalBrainModelPath;
-            pve0 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_0.nii.gz'));
-            pve1 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_1.nii.gz'));
-            pve2 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_2.nii.gz'));
-            % pve0 = niftiread(strcat(path, sprintf('%02s', num2str(GA)), '/STA', sprintf('%02s', num2str(GA)), '_WM_pve_0.nii.gz'));
-            % pve1 = niftiread(strcat(path, sprintf('%02s', num2str(GA)), '/STA', sprintf('%02s', num2str(GA)), '_WM_pve_1.nii.gz'));
-            % pve2 = niftiread(strcat(path, sprintf('%02s', num2str(GA)), '/STA', sprintf('%02s', num2str(GA)), '_WM_pve_2.nii.gz'));
-        case 'FeTA_CHUV'
-            if sub_id=='sub-709'
-                path = '/data/bach/SimuHASTE/Data_processed/FeTA_challenge_2022-CHUV_testing_set_proc_resampled_1mm3/WM_segmentation_after_upsampling/';
-            else
-                path = '/data/bach/SimuHASTE/Data_processed/FeTA_challenge_2022-CHUV_testing_set_proc/WM_segmentation_after_upsampling/';
-            end
-            pve0 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_0.nii.gz'));
-            pve1 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_1.nii.gz'));
-            pve2 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_2.nii.gz'));
-        case 'FeTA'
-            path = '/data/bach/SimuHASTE/Data_processed/FeTA2021_Release1and2Corrected_v4_proc/';
-            pve0 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_0.nii.gz'));
-            pve1 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_1.nii.gz'));
-            pve2 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_2.nii.gz'));
-        case 'Custom'
-            atlas_id = strsplit(FetalBrainModelPath,'/');
-            pve0 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_0.nii.gz'));
-            pve1 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_1.nii.gz'));
-            pve2 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_2.nii.gz'));
-            clear atlas_id
+%     switch model
+%         case 'STA'
+% %             path = '.\data\atlas_fast_clustering\STA';
+% %             path = 'C:\Users\admin\Desktop\Andrés\CODE AND DATA TO SIMULATE DIFERENT DATASETS\GMM and FAST segmentations on White matter\FAST_Clustering\STA';
+%             % path =  '/home/mroulet/Documents/MATLAB/fabian_margaux/dataverse_files_2/STA';
+%             path = FetalBrainModelPath;
+%             pve0 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_0.nii.gz'));
+%             pve1 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_1.nii.gz'));
+%             pve2 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_2.nii.gz'));
+%             % pve0 = niftiread(strcat(path, sprintf('%02s', num2str(GA)), '/STA', sprintf('%02s', num2str(GA)), '_WM_pve_0.nii.gz'));
+%             % pve1 = niftiread(strcat(path, sprintf('%02s', num2str(GA)), '/STA', sprintf('%02s', num2str(GA)), '_WM_pve_1.nii.gz'));
+%             % pve2 = niftiread(strcat(path, sprintf('%02s', num2str(GA)), '/STA', sprintf('%02s', num2str(GA)), '_WM_pve_2.nii.gz'));
+%         case 'FeTA_CHUV'
+%             if sub_id=='sub-709'
+%                 path = '/data/bach/SimuHASTE/Data_processed/FeTA_challenge_2022-CHUV_testing_set_proc_resampled_1mm3/WM_segmentation_after_upsampling/';
+%             else
+%                 path = '/data/bach/SimuHASTE/Data_processed/FeTA_challenge_2022-CHUV_testing_set_proc/WM_segmentation_after_upsampling/';
+%             end
+%             pve0 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_0.nii.gz'));
+%             pve1 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_1.nii.gz'));
+%             pve2 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_2.nii.gz'));
+%         case 'FeTA'
+%             path = '/data/bach/SimuHASTE/Data_processed/FeTA2021_Release1and2Corrected_v4_proc/';
+%             pve0 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_0.nii.gz'));
+%             pve1 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_1.nii.gz'));
+%             pve2 = niftiread(strcat(path, sub_id, '/', sub_id, '_WM_pve_2.nii.gz'));
+%         case 'Custom'
+%             atlas_id = strsplit(FetalBrainModelPath,'/');
+%             pve0 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_0.nii.gz'));
+%             pve1 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_1.nii.gz'));
+%             pve2 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_2.nii.gz'));
+%             clear atlas_id
+% 
+%     end
 
-    end
+    % MARGAUX VERSION BELOW
+    % path = FetalBrainModelPath;
+    % if model == "STA"
+    %     pve0 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_0.nii.gz'));
+    %     pve1 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_1.nii.gz'));
+    %     pve2 = niftiread(strcat(path,'STA', sprintf('%02s', num2str(GA)), '_WM_pve_2.nii.gz'));
+    % else
+    %     atlas_id = strsplit(FetalBrainModelPath,'/');
+    %     pve0 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_0.nii.gz'));
+    %     pve1 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_1.nii.gz'));
+    %     pve2 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_2.nii.gz'));
+    %     clear atlas_id
+    % end
+
+    atlas_id = strsplit(FetalBrainModelPath,'/');
+    pve0 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_0.nii.gz'));
+    pve1 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_1.nii.gz'));
+    pve2 = niftiread(strcat(FetalBrainModelPath,atlas_id{end-1}, '_WM_pve_2.nii.gz'));
+    clear atlas_id
+
 
     % Reorient the partial volume maps extracted from the WM mask of the
     % fetal brain so that the slice thickness direction is encoded in the
@@ -184,7 +206,8 @@ if isequal(segmentation, 'FAST')
     neg_reward(neg_reward>0) = 0;
     
     %Out boundaries control of the advantage/disadvantage values
-    ClipValue = 'adapt';
+    %ClipValue = 'adapt';
+    %ClipValue = 0.99;
     pos_reward = clip_function(pos_reward, ClipValue, GA);
     neg_reward = clip_function(neg_reward, ClipValue, GA);
     

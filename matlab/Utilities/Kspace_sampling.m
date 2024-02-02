@@ -218,6 +218,7 @@ for iSlice=1:length(interleavedSlices_index)
     % - Random translation: uniform distribution between
     % [-translation_amplitude,+translation_amplitude]mm
     if any(interleavedSlices_index(iSlice)==motion_corrupted_slices)
+        fprintf("Motion corrupted slices generation")
         motion_index = motion_index + 1;
         Fetal_Brain_rotated = moving_3Dbrain(                             Fetal_Brain, ...
                                                                             SimResReo, ...
@@ -313,29 +314,38 @@ for iSlice=1:length(interleavedSlices_index)
     %Sum non-zero contributions in KSpace for slice 
     %interleavedSlices_index(iSlice), and echo iEcho
     if sum(sum(KSpace(:,:,interleavedSlices_index(iSlice))))~=0
+        disp("non-zero contribution in KSpace Slice !")
         %The sampled lines in KSpace for slice iSlice, and echo iEcho
         %are non zero
         SampledLines = find(squeeze(KSpace(1,:,interleavedSlices_index(iSlice)))~=0);
         %Loop through all lines of KSpace
+        hermitian_line_nb = 0;
+        closest_echo= 0;
+        empty_iline = 0;
         for iLine=1:size(KSpace,2)
             %If a line was not sampled
             if KSpace(1,iLine,interleavedSlices_index(iSlice))==0
+                empty_iline = empty_iline + 1;
                 %Find only the first non-zero line following iLine
                 iFind = find(SampledLines>iLine,1,'first');
                 %If a sampled line iFind was found following the
                 %non-sampled line iLine, copy this iFind line from SLAB
                 %to the corresponding line position in KSpace
                 if ~isempty(iFind)
+                    closest_echo = closest_echo + 1;
                     KSpace(:,iLine,interleavedSlices_index(iSlice)) = SLAB(:,iLine,interleavedSlices_index(iSlice),SamplingOrder==SampledLines(iFind));
                 else
                     %If no sampled line was found following the non-sampled
                     %line iLine, use hermitian symmetry to fill KSpace: the
                     %line symmetrical to iLine compared to the center of
                     %KSpace is size(KSpace,2)-iLine+1
+                    hermitian_line_nb = hermitian_line_nb + 1;
                     KSpace(:,iLine,interleavedSlices_index(iSlice)) = fliplr(conj(KSpace(:,size(KSpace,2)-iLine+1,interleavedSlices_index(iSlice)))')';
                 end
             end
         end
+        disp([" empty iLines found: ", num2str(empty_iline)])
+        disp([" Filled by: adj echo", num2str(closest_echo), "hermitian sym:",num2str(hermitian_line_nb)])
     end
 %     toc
 end
