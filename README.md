@@ -1,5 +1,5 @@
  # Readme
-This repository contains a wrapper to run FaBIAN simulation tool via python.
+This repository contains a wrapper to run FaBIAN simulation tool via python. It will be use to do synthetic data augmentation on deformed segmentation maps.
 
 It contains some command-line commands that are listed below, as well as utility functions for preprocessing fetal brain model inputs prior running fabian (ex: fsl_clustering.py, Authors: Andrés le Boeuf, Hélène Lajoux).
 
@@ -35,19 +35,18 @@ optional arguments:
 
 Notes: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_default_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range.
 
-*Current Status*: For now `python run_fabian.py` only runs with FetModel= 'STA'. Eventually, you'll be able to run the script for any dataset by providing a path to a specific segmentation maps directory and a json specifying the GA (to be continued).
+*Current Status*: `python run_fabian.py` runs any fetal model. Prior running the script you should run fsl_clustering to generate the partial volumes.
 
 ```
 {
     "AcquisitionType": "Haste",
-    "FetalModel": "STA",
-    "FetalBrainModelPath": "./dataverse_files/",
-    "INU": "./rf20_B.rawb",
+    "FetalModel": "CHUV",
+    "INU": "./code/rf20_B.rawb",
     "SimResampling": "false",
     "SimCrop": "true",
-    "SamplingFactor": 1,
-    "FOVRead": 300,
-    "FOVPhase": 300,
+    "SamplingFactor": 2,
+    "FOVRead": 120,
+    "FOVPhase": 120,
     "TR": 4.08,
     "ESP": 4.08,
     "ETL": 224,
@@ -56,20 +55,28 @@ Notes: When optional arguments are not parse by user, parameters values are assi
     "ACF": 2,
     "RefLines": 42,
     "ZIP": 1,
-    "BaseResolution": 250,
-    "ReconMatrix": 250,
-    "SliceGap": 0.3,
-    "SliceThickness": {"range": [0.8, 5],  "default": 1.2},
+    "BaseResolution": 150,
+    "ReconMatrix": 150,
+    "SliceGap": 0,
+    "SliceThickness": {"range": [0.8, 5],  "default": 3.0},
     "WMheterogeneity": {"range": [0, 1],  "default": 1},
     "B0": {"range": [1.5, 3],  "default": 1.5},
-    "SDnoise": {"range": [0.002, 0.2],  "default": 0.002},
+    "SDnoise": {"range": [0.002, 0.02],  "default": null},
     "Shift_mm": {"range": [-1.6, 0, 1.6], "default": 0},
     "Orientation": {"range": [1, 3], "default": null},
     "MotionLevel": {"range": [0, 4], "default": 0},
     "FlipAngle": {"range": [150, 180],"default": null},
     "TEeff": {"range": [90, 300],"default": null},
-    "GA": {"range": [21, 35],  "default": null}
+    "GA": {"range": [21, 35],  "default": null},
+    "T1_WM": {"range": [2324,3098], "default": null, "target": 0, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_GM": {"range": [1955,2434], "default": null, "target": 0, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_CSF": {"range": [3000,4000], "default": null, "target": 4000, "n_subrange": 4, "flat_factor": 0.6},
+    "T2_WM": {"range": [0,2000], "default": null, "target": 285, "n_subrange": 4, "flat_factor": 0.2},
+    "T2_GM": {"range": [0,2000], "default": null, "target": 181, "n_subrange": 4, "flat_factor": 0.2},
+    "T2_CSF": {"range": [0,2000], "default": null, "target": 2000, "n_subrange": 4, "flat_factor": 0.6},
+    "ClipValue": {"range": [0,1], "default": null}
 }
+
 ```
 
 Required libraries: 
@@ -78,6 +85,7 @@ Required libraries:
 ## Available configuration files:
 - haste_default_config.json: the template to the haste sequence. 
 - haste_isotropic_config.json: the template to generate isotropic images of 1.
+- haste_range_config.json: tge tenoakte to the haste sequence without any default values. This configuration can be use to simulate image using random parameters within defined range.
 
 *IMPORTANT NOTES*: default simulation deviates from typical haste sequence as FOV is set to 300x300 instead of 360x360. Base resolution and Reconstruction matrix ar set to 250 so that fabian can generate high isotropic 1.2x1.2x1.2mm images without getting out of memory.
 
@@ -86,8 +94,8 @@ The atlas directory should be structured as in `./STA/` directory (with subdirec
 
 
 ## ToDos:
-- [   ] Change input fetal brain model handling: input a directory that contains all required file to run the sim (segmentation and pve_X)
-- [   ] Enable simulation on all kinds of datasets -> use Andrès fsl_clustering script. 
+- [ x ] Change input fetal brain model handling: input a directory that contains all required file to run the sim (segmentation and pve_X)
+- [ x ] Enable simulation on all kinds of datasets -> use Andrès fsl_clustering script. 
 - [ x ] Prior work on label maps required though (Vlad on it).
 - [ x ] input random brain properties using set_brainproperties.m 
 - [ x ] Generate json file for each simulation listing parameters
@@ -136,8 +144,11 @@ Amplitude of motion is set randomly within input motion bounds specified by moti
 
 White Matter Heterogeneity:
 - WMHeterogeneity: White matter maturation processes implementation in FaBiAN simulator. ON - 1, OFF - 0. (default = 1)
+- ClipValue: clip value takes value between 0-1 and define the level of WM heterogeneity that can happen given the GA (optimization done by Andrès)
 
 
 ## Modifications to FaBIAN
 - `set_brainproperties`: new function that inputs brain property given field strength B0. This function can be further modify to enable setting random T1/T2 values given tissues, without any physical meaning for data augmentation (test required thoug, especially of epgm formalism).
 - `set_motion`, `motion_transform_mr`: new functions that enables inistialisation of custom motion bounds. `set_motion` takes a motion level in and outputs a matlab struct with motion bounds. This parameter is then input to FaBIAN main function and as argsin of `motion_transform_mr`.
+- `clipvalue`: is now a parameter to FaBIAN_main function.
+- `T1, T2 and clip values` can all be set randomly. 

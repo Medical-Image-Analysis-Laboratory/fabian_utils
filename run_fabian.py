@@ -368,10 +368,8 @@ def main():
     # Parse optional arguments
     args = parse_arguments()
 
-    # Get the current date and time
-    current_datetime = datetime.now().strftime("%Y%m%d%H%M")
-
-    log_filepath = args.out + 'code/log/' + current_datetime + '_sim-006.log'
+    # Log initialization
+    log_filepath = args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-005.log'
     log = Logging(log_filepath)
             
     # SIMULATION START
