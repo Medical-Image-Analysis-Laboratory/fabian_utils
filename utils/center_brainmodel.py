@@ -1,12 +1,18 @@
 import copy
 import numpy as np
 import nibabel as ni
-from .definitions import AUTO_MASK_PATH
-from .utils import squeeze_dim
+import SimpleITK as sitk
+import os
 
+"""Author: Thomas Sanchez"""
+
+def squeeze_dim(arr, dim):
+    if arr.shape[dim] == 1 and len(arr.shape) > 3:
+        return np.squeeze(arr, axis=dim)
+    return arr
 
 def get_cropped_stack_based_on_mask(
-    image_ni, mask_ni, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"
+    image_ni, seg_ni, mask_ni, boundary_i=0, boundary_j=0, boundary_k=0, unit="mm"
 ):
     """
     Crops the input image to the field of view given by the bounding box
@@ -39,11 +45,17 @@ def get_cropped_stack_based_on_mask(
     image_ni = copy.deepcopy(image_ni)
 
     image = squeeze_dim(image_ni.get_fdata(), -1)
+    seg = squeeze_dim(seg_ni.get_fdata(), -1)
     mask = squeeze_dim(mask_ni.get_fdata(), -1)
 
     assert all(
         [i >= m] for i, m in zip(image.shape, mask.shape)
     ), "For a correct cropping, the image should be larger or equal to the mask."
+    assert all(
+        [i >= m] for i, m in zip(seg.shape, mask.shape)
+    ), "For a correct cropping, the image should be larger or equal to the mask."
+
+    assert(image.shape == seg.shape)
 
     # Get rectangular region surrounding the masked voxels
     [x_range, y_range, z_range] = get_rectangular_masked_region(mask)
@@ -81,8 +93,15 @@ def get_cropped_stack_based_on_mask(
         z_range[0] : z_range[1],
     ]
 
+    seg_cropped = seg[
+        x_range[0] : x_range[1],
+        y_range[0] : y_range[1],
+        z_range[0] : z_range[1],
+    ]
+
     image_cropped = ni.Nifti1Image(image_cropped, new_affine)
-    return image_cropped
+    seg_cropped = ni.Nifti1Image(seg_cropped, new_affine)
+    return image_cropped, seg_cropped
 
 
 def get_rectangular_masked_region(
@@ -120,3 +139,47 @@ def get_rectangular_masked_region(
         range_list.append(np.array([low, high]).astype(int))
 
     return range_list
+
+def get_mask_from_seg(seg_ni):
+
+    # Build mask and Save as nii.gz file
+    return sitk.BinaryThreshold(seg_ni, 
+                                   lowerThreshold=1, 
+                                   upperThreshold=float(sitk.GetArrayFromImage(seg_ni).max()), 
+                                   insideValue=1, 
+                                   outsideValue=0)
+
+def gen_mask_from_seg(root_directory):
+
+    # Walk through the directory
+    for dirpath, dirnames, filenames in sorted(os.walk(root_directory)):
+        for filename in filenames:
+            # Check if the filename contains 'dseg'
+            if 'tissue' in filename:
+                # Get mask and Save as ni.gz
+                print(dirpath)
+                seg_ni = sitk.ReadImage(os.path.join(dirpath,filename))
+                mask_ni = get_mask_from_seg(seg_ni)
+                sitk.WriteImage(mask_ni, os.path.join(dirpath, filename.replace('tissue','mask')))
+
+
+def gen_crop(root_directory):
+    # Walk through the directory
+    for dirpath, dirnames, filenames in sorted(os.walk(root_directory)):
+        for filename in filenames:
+            # Check if the filename contains 'dseg'
+            if ('tissue' in filename) and ('remapped' not in filename):
+                print(dirpath)
+                # Get mask and Save as ni.gz
+                seg_ni = ni.load(os.path.join(dirpath,filename))
+                image_ni = ni.load(os.path.join(dirpath,filename.replace('tissue', 'T2w')))
+                mask_ni = ni.load(os.path.join(dirpath,filename.replace('tissue', 'mask')))
+                image_crop_ni, seg_crop_ni = get_cropped_stack_based_on_mask(image_ni, seg_ni, mask_ni)
+                # overwrite original images with new centered ones
+                ni.save(image_crop_ni,os.path.join(dirpath, filename.replace('tissue', 'T2w')))
+                ni.save(seg_crop_ni,os.path.join(dirpath, filename))
+# **********************************************************************************
+# Path to the root directory
+root_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew/'
+gen_mask_from_seg(root_directory)
+gen_crop(root_directory)

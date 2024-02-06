@@ -6,7 +6,7 @@ import shutil
 root_directory = '/home/mroulet/Documents/Data/miccai_submission/merged_feta/'
 # Create the 'fetalmodel' directory
 #fetalmodel_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/CHUV/'
-fetalmodel_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETA/'
+fetalmodel_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew/'
 
 os.makedirs(fetalmodel_directory, exist_ok=True)
 
@@ -25,10 +25,13 @@ for sub_folder in sorted(os.listdir(root_directory)):
         input_anat_path = os.path.join(sub_folder_path, 'anat')
         for filename in os.listdir(input_anat_path):
 
-            if filename.endswith('.nii.gz') and ('brainmask' not in filename):
+            if filename.endswith('.nii.gz') and ('brainmask' not in filename) and ('remapped' not in filename):
                 # Remove "rec-mial" from the filename
                 new_filename = filename.replace("rec-mial_", "")
                 new_filename = new_filename.replace("rec-irtk_", "")
+
+                if "dseg" in new_filename:
+                    new_filename = new_filename.replace("dseg","tissue")
 
                 # Create the output path and copy the file to the new directory
                 output_file_path = os.path.join(output_sub_folder_path, new_filename)

@@ -6,8 +6,8 @@ import matlab.engine
 import os
 import time 
 import logging
-import io
 from datetime import datetime
+import re
 
 """Minimal Command to run the script:   
 python run_fabian.py --config /home/mroulet/Documents/PYTHON/fabian_utils/code/haste_range_config.json --out /home/mroulet/Documents/Data/STA_FaBIAN/sim-006/ --model /home/mroulet/Documents/PYTHON/fabian_utils/STA/
@@ -101,9 +101,10 @@ class Simulation:
 
         # Paths
         if self.FetalModel == 'STA':
+            self.SubID = self.GA
             self.FetalBrainModelPath = args.model + self.FetalModel + str(self.SubID) + '/'
         else:
-            self.FetalBrainModelPath = args.model + 'sub-' + str(self.SubID) + '/'
+            self.FetalBrainModelPath = args.model + 'sub-' + str(self.SubID).zfill(3) + '/'
 
         self.set_json_filepath()
 
@@ -295,7 +296,7 @@ def parse_arguments():
     parser.add_argument('--out', help='Path to the output directory', required=True)
     parser.add_argument('--model', help='Path to the atlas fetal brain model directory ../STA/', required= True)
     # Fetal Model
-    parser.add_argument('--FetalModel', help='Fetal Model: [STA, Custom (when ready)] (default = STA)',required=False)
+    parser.add_argument('--FetalModel', help='Fetal Model: [STA, CHUV, STA] (default = random)',required=False)
     # Integers
     parser.add_argument('--WMheterogeneity', type=int, choices=[0,1], help='WM Heterogeneity: 1 - ON, 0 - OFF (default=1)',required=False)
     parser.add_argument('--GA', type=int, help='Gestational age range: [21,35] weeks (default=random)',required=False) 
@@ -331,7 +332,8 @@ def motion_arguments(MotionBounds, MotionLevel=1):
 
 def is_model_in(model_path):
     model_dir = model_path.split("/")[-2]
-    
+    print(model_path)
+    print(model_dir)
     if not os.path.isdir(model_path):
         return False # ValueError(f'Missing directory: {model_path}')
     
@@ -345,22 +347,141 @@ def is_model_in(model_path):
     else:
         return True
 
-def study_bias_FOV(sim):
+def study_bias_FOV(args,log):
 
     run_ids = [1,2,3,4,5,6]
     FOVs = [324, 300, 248, 200, 152, 120]
     base_resolutions = [405, 375, 310, 250, 190, 150]
 
     for fov, base_resolution, run_id in zip(FOVs, base_resolutions, run_ids):
+        ids = {'SubID': None, 'SesID': 1, 'RunID': run_id}
+        sim = Simulation(args,ids)
         sim.FOVPhase = float(fov)
         sim.FOVRead = float(fov)
         sim.BaseResolution = float(base_resolution)
         sim.ReconMatrix = float(base_resolution)
         sim.RunID = run_id
-        sim.run_simulation()
+        sim.run_simulation(log)
 
-def study_noise(sim):
-    return 0
+def study_noise(args):
+
+    # Log initialization
+    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-01.log')
+
+    slice_thicknesses = [3., 2.5, 2., 1.5, 1.2, 1., 0.8]
+
+    log.logger.info("Noise Study: 6 runs with fixed parameters except thicknesses: [3., 2.5, 2., 1.5, 1.2, 1., 0.8]")
+    for slice_thickness, run_id in zip(slice_thicknesses, range(1,len(slice_thicknesses))):
+        ids = {'SubID': None, 'SesID': 1, 'RunID': run_id}
+        sim = Simulation(args,ids)
+        sim.SliceThickness = slice_thickness
+        sim.run_simulation(log)
+
+def study_noise_fov(args):
+
+    # Log initialization
+    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-05.log')
+
+    run_ids = [1,2,3,4,5,6]
+    FOVs = [324, 300, 248, 200, 152, 120]
+    base_resolutions = [405, 375, 310, 250, 190, 150]
+
+    log.logger.info("Noise Study: 6 runs with fixed parameters except fov and base_resolution, res =3.0, FOV: [324, 300, 248, 200, 152, 120]")
+    for FOV, base_resolution, run_id in zip(FOVs, base_resolutions, run_ids):
+        ids = {'SubID': None, 'SesID': 5, 'RunID': run_id}
+        sim = Simulation(args,ids)
+        sim.FOVPhase = float(FOV)
+        sim.FOVRead = float(FOV)
+        sim.BaseResolution = float(base_resolution)
+        sim.ReconMatrix = float(base_resolution)
+        sim.run_simulation(log)
+
+def study_noise_ga(args):
+    # Log initialization
+    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-04.log')
+
+    GAs = [26, 30, 34, 38]
+
+    log.logger.info("Noise Study: 6 runs with fixed parameters except fov and base_resolution, res =0.8, GA: [26, 30, 34, 38]")
+    for ga, run_id in zip(GAs, range(1,5)):
+        ids = {'SubID': ga, 'SesID': 4, 'RunID': run_id}
+        args.GA = ga
+        sim = Simulation(args,ids)
+        sim.run_simulation(log)
+
+def study_TE_flipangle(args):
+
+    # Log initialization
+    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-07.log')
+    log.logger.info("Random study: 40 runs with fixed parameters except flip angle ACF=1, RefLines=0: [140,150,160,180,190] and TEs: [90, 120, 150, 180, 210, 240, 270, 300,330]")
+
+    flipangles = [140,150,160,170,180,190]
+    TEs = [90, 120, 150, 180, 210, 240, 270, 300, 330]
+    i=0
+    for flipangle in flipangles:
+        for TEeff in TEs:
+            i+=1
+            ids = {'SubID': None, 'SesID': 7, 'RunID': i}
+            sim = Simulation(args,ids)
+            sim.FlipAngle = float(flipangle)
+            sim.TEeff = float(TEeff)
+            log.logger.info(f"Starting simulation: Flip Angle: {str(flipangle)} TE: {str(TEeff)}")
+            sim.run_simulation(log)
+
+def test_simulation(args):
+
+    # Log initialization
+    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-08.log')
+    log.logger.info("Test for debugging FaBIAN: check if at 0.8 isotropic TE >= 240 works")
+
+    for run_id in range(1,3):
+        ids = {'SubID': 'STA', 'SesID': 8, 'RunID': run_id}
+        sim = Simulation(args,ids)
+        sim.run_simulation(log) 
+
+def pick_random_sub(directory_path,fetal_model):
+    # Check if the input is a valid directory
+    if not os.path.isdir(directory_path):
+        raise ValueError('Input is not a valid directory.')
+
+    # Get the directory contents
+    dir_contents = os.listdir(directory_path)
+    if fetal_model == "STA":
+         # Extract numbers from folder names using regular expression
+        folder_numbers = [int(re.search(r'STA(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'STA(\d+)', folder)]
+    else:
+        # Extract numbers from folder names using regular expression
+        folder_numbers = [int(re.search(r'sub-(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'sub-(\d+)', folder)]
+
+    folder_numbers = sorted(folder_numbers)
+
+    return random.choice(folder_numbers)
+
+def random_simulation_physical(args):
+
+    ses_id = 1
+    log_filename = args.out + 'log/' +f'sim-007_ses-{str(ses_id).zfill(2)}.log'
+    while os.path.exists(log_filename):
+        ses_id += 1
+        log_filename = args.out + 'log/' + f'sim-007_ses-{str(ses_id).zfill(2)}.log'
+
+    # Log initialization
+    log = Logging(log_filename)
+    log.logger.info("Random Simulation using FabianBrainProperties and using 3 sets of data: CHUV, FETA (centered), STA")
+
+    root_data = '/home/mroulet/Documents/Data/FaBIAN/sim-007/'
+    root_atlas = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/'
+
+    for run_id in range(1,5001):
+        args.FetalModel = random.choice(["STA","CHUV", "FETA"])
+        args.out = os.path.join(root_data,args.FetalModel) + "/"
+        args.model = os.path.join(root_atlas,args.FetalModel) + "/"
+
+        sub_id = pick_random_sub(args.model,args.FetalModel)
+
+        ids = {'SubID': sub_id, 'SesID': ses_id, 'RunID': run_id}
+        sim = Simulation(args,ids)
+        sim.run_simulation(log) 
 
 #**********************************************************
 def main():
@@ -368,15 +489,17 @@ def main():
     # Parse optional arguments
     args = parse_arguments()
 
-    # Log initialization
-    log_filepath = args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-005.log'
-    log = Logging(log_filepath)
-            
-    # SIMULATION START
-    for run_id in range(1,2):
-        ids = {'SubID': '001', 'SesID': 5, 'RunID': run_id}
-        sim = Simulation(args,ids)
-        sim.run_simulation(log)
+    # SMALL STUDIES
+    #study_noise_ga(args)
+    #study_noise_fov(args)
+    #study_bias_FOV(args)
+    #study_TE_flipangle(args)   
+
+    # DEBUG TEST
+    #test_simulation(args)    
+
+    # RANDOM SIMULATION
+    random_simulation_physical(args)
 
 if __name__ == "__main__":
     main()

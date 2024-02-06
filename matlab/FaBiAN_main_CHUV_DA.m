@@ -277,17 +277,17 @@ if not(isfolder(DerivativesRefT2mapPath))
 end
 
 % T2w Images
-OutputIm = strcat(OutputPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_T2w.nii');
-OutputImReo = strcat(OutputPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_T2w.nii');
-OutputImCrop = strcat(OutputPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_T2w.nii');
+OutputIm = strcat(OutputPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_T2w.nii');
+OutputImReo = strcat(OutputPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_T2w.nii');
+OutputImCrop = strcat(OutputPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_T2w.nii');
 % Labels
-OutputLabels = strcat(DerivativesLabelsPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_labels.nii');
-OutputLabelsReo = strcat(DerivativesLabelsPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_labels.nii');
-OutputLabelsCrop = strcat(DerivativesLabelsPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_labels.nii');
+OutputLabels = strcat(DerivativesLabelsPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_labels.nii');
+OutputLabelsReo = strcat(DerivativesLabelsPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_labels.nii');
+OutputLabelsCrop = strcat(DerivativesLabelsPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_labels.nii');
 % Masks
-OutputMask = strcat(DerivativesMasksPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_mask_TE.nii');
-OutputMaskReo = strcat(DerivativesMasksPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_mask.nii');
-OutputMaskCrop = strcat(DerivativesMasksPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_mask.nii');
+OutputMask = strcat(DerivativesMasksPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_mask.nii');
+OutputMaskReo = strcat(DerivativesMasksPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_mask.nii');
+OutputMaskCrop = strcat(DerivativesMasksPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_mask.nii');
 % Ref T2 map
 %OutputRefT2map = strcat(DerivativesRefT2mapPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_reft2map.nii');
 OutputRefT2map = strcat(DerivativesRefT2mapPath, 'sub-', sprintf('%03s',num2str(SubID)),'_reft2map.nii');
@@ -299,30 +299,30 @@ OutputRefT2map = strcat(DerivativesRefT2mapPath, 'sub-', sprintf('%03s',num2str(
 
 % Load segmented high-resolution images of the fetal brain
 % MR notes: terrible code here -> manage GA prior calling fabian_main!
-switch FetalModel
-     case 'STA'
-        % Gestational age (in weeks)
-        GA = SubID; 
+% switch FetalModel
+%      case 'STA'
+%         % Gestational age (in weeks)
+%         GA = SubID; 
+% %         % Session ID
+% %         ses_id = 1;
+%     case 'FeTA_CHUV'
+%         ParticipantsMetadata = strcat(FetalBrainModelPath, 'FeTA-CHUV_participants.xlsx');
+%         Participants = readtable(ParticipantsMetadata);
+%         index = string(Participants{:,5})==SubID;
+%         % Gestational age (in weeks)
+%         GA = Participants{index,3};
 %         % Session ID
-%         ses_id = 1;
-    case 'FeTA_CHUV'
-        ParticipantsMetadata = strcat(FetalBrainModelPath, 'FeTA-CHUV_participants.xlsx');
-        Participants = readtable(ParticipantsMetadata);
-        index = string(Participants{:,5})==SubID;
-        % Gestational age (in weeks)
-        GA = Participants{index,3};
-        % Session ID
-%         ses_id = participants{index,2};
-    case 'FeTA'
-        ParticipantsMetadata = strcat(FetalBrainModelPath, '202303-FeTA2021_Release1and2Corrected_v4-Replicate_OHBM_training_set.xlsx');
-        Participants = readtable(ParticipantsMetadata, 'Sheet', 'data2sim_1', 'Range', 'A1:F11');
-        index = string(Participants{:,1})==SubID;
-        % Gestational age (in weeks)
-        GA = round(Participants{index,3});
-        % Session ID
-%         ses_id = unique(participants{index,5});
-       
-end
+% %         ses_id = participants{index,2};
+%     case 'FeTA'
+%         ParticipantsMetadata = strcat(FetalBrainModelPath, '202303-FeTA2021_Release1and2Corrected_v4-Replicate_OHBM_training_set.xlsx');
+%         Participants = readtable(ParticipantsMetadata, 'Sheet', 'data2sim_1', 'Range', 'A1:F11');
+%         index = string(Participants{:,1})==SubID;
+%         % Gestational age (in weeks)
+%         GA = round(Participants{index,3});
+%         % Session ID
+% %         ses_id = unique(participants{index,5});
+% 
+% end
 
 % Load segmented high-resolution anatomical MR images of the fetal brain at
 % gestational age GA

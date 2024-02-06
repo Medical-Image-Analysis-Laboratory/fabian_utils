@@ -294,6 +294,7 @@ for iSlice=1:length(interleavedSlices_index)
     % at the center of k-space
     if ACF~=1 && RefLines~=0
         temp = (nPE/2-RefLines/2)+RefLines+1:ACF:nPE;
+        temp
         SamplingOrder = fliplr([ACF:ACF:(nPE/2-RefLines/2), (nPE/2-RefLines/2)+1:(nPE/2-RefLines/2)+RefLines, temp(1:round(TEeff/TR-RefLines/2))]);
         clear temp
     elseif ACF==1 && RefLines==0
