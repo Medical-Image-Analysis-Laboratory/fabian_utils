@@ -277,17 +277,17 @@ if not(isfolder(DerivativesRefT2mapPath))
 end
 
 % T2w Images
-OutputIm = strcat(OutputPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_T2w.nii');
-OutputImReo = strcat(OutputPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_T2w.nii');
-OutputImCrop = strcat(OutputPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_T2w.nii');
+OutputIm = strcat(OutputPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_T2w.nii');
+OutputImReo = strcat(OutputPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_T2w.nii');
+OutputImCrop = strcat(OutputPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_T2w.nii');
 % Labels
-OutputLabels = strcat(DerivativesLabelsPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_labels.nii');
-OutputLabelsReo = strcat(DerivativesLabelsPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_labels.nii');
-OutputLabelsCrop = strcat(DerivativesLabelsPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_labels.nii');
+OutputLabels = strcat(DerivativesLabelsPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_labels.nii');
+OutputLabelsReo = strcat(DerivativesLabelsPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_labels.nii');
+OutputLabelsCrop = strcat(DerivativesLabelsPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_labels.nii');
 % Masks
-OutputMask = strcat(DerivativesMasksPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_mask.nii');
-OutputMaskReo = strcat(DerivativesMasksPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_mask.nii');
-OutputMaskCrop = strcat(DerivativesMasksPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%02s',num2str(RunID)), '_mask.nii');
+OutputMask = strcat(DerivativesMasksPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_mask.nii');
+OutputMaskReo = strcat(DerivativesMasksPathReo, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_mask.nii');
+OutputMaskCrop = strcat(DerivativesMasksPathCrop, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', sprintf('%04s',num2str(RunID)), '_mask.nii');
 % Ref T2 map
 %OutputRefT2map = strcat(DerivativesRefT2mapPath, 'sub-', sprintf('%03s',num2str(SubID)), '_ses-', sprintf('%02s', num2str(SesID)), '_run-', num2str(RunID), '_reft2map.nii');
 OutputRefT2map = strcat(DerivativesRefT2mapPath, 'sub-', sprintf('%03s',num2str(SubID)),'_reft2map.nii');
@@ -495,7 +495,9 @@ NbSlices = ceil(max([size(T2decay,1), size(T2decay,2), size(T2decay,3)/SamplingF
 % Corresponding matrix size
 T2decayMaxDim = ceil(NbSlices * length(Sl_to_Sl) / (SimResReo(3) / SubunitRes));
 
-
+if NbSlices > 200
+    error('Volume is too big to run FaBIAN');
+end
 
 % Zero-padding of the T2decay array so that it is 3D isotropic - This makes
 % some calculations below a bit easier

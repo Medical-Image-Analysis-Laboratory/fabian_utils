@@ -178,8 +178,50 @@ def gen_crop(root_directory):
                 # overwrite original images with new centered ones
                 ni.save(image_crop_ni,os.path.join(dirpath, filename.replace('tissue', 'T2w')))
                 ni.save(seg_crop_ni,os.path.join(dirpath, filename))
+
+def get_img_size(root_directory):
+    maxpx = 0
+    maxpxs = []
+    dirxs = []
+    sizexs = []
+    for dirpath, dirnames, filenames in sorted(os.walk(root_directory)):
+        for filename in filenames:
+            # Check if the filename contains 'dseg'
+            if ('T2w' in filename):
+                # Get mask and Save as ni.gz
+                # Read the NIfTI image using SimpleITK
+                image = sitk.ReadImage(os.path.join(dirpath,filename))
+                # Get the size of the image
+                size = image.GetSize()
+                # Print the size of the image
+                # Compute the number of voxels
+                #print(f"{dirpath}: {image.GetNumberOfPixels()}")
+                sizexs.append(size)
+                maxpxs.append(image.GetNumberOfPixels())
+                dirxs.append(dirpath)
+                if maxpx < image.GetNumberOfPixels():
+                    maxpx = image.GetNumberOfPixels()
+
+    # Get the sorted indices
+    sorted_indices = sorted(range(len(maxpxs)), key=lambda k: maxpxs[k])
+    sorted_info_list = [dirxs[i] for i in sorted_indices]
+    sorted_sizexs= [sizexs[i] for i in sorted_indices]
+    sorted_maxpxs= [maxpxs[i] for i in sorted_indices]
+    
+    for i,size,px in zip(sorted_info_list, sorted_sizexs, sorted_maxpxs):
+        print(f'{i}: {size} - {px}')
+
 # **********************************************************************************
 # Path to the root directory
 root_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew/'
-gen_mask_from_seg(root_directory)
-gen_crop(root_directory)
+#gen_mask_from_seg(root_directory)
+#gen_crop(root_directory)
+#get_img_size(root_directory)
+
+noises = np.logspace(0.0001,0.005,1000)
+
+# Define the range in logarithmic space
+log_range = np.logspace(np.log10(0.0001), np.log10(0.005), num=1000)
+
+for i in range(10):
+    print(np.random.choice(log_range))

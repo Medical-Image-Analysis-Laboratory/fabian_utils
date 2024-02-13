@@ -80,7 +80,7 @@ uT2decay = zeros(size(umap,1), ETL);
 % Computation time
 tic
 
-parpool('FaBIAN');
+% parpool('FaBIAN');
 parfor (i=1:size(uT2decay,1),30)
     uT2decay(i, :) = real(cp_cpmg_epg_domain_fplus_fminus(umap(i,1).*90, ETL, umap(i,1).*flipAngle, ESP, umap(i,2), umap(i,3)))/sampling_factor;
 end
@@ -97,6 +97,6 @@ T2decay = reshape(T2decay, [size(Fetal_Brain_upsampled), size(T2decay,2)]);
 
 % Display computation time
 time2=toc;
-fprintf('Computation time to run EPG simulations in every voxel of the image: %0.5f sec - %0.5f seconds.\n', time1, time2);
+fprintf('Computation time to run EPG simulations in every voxel of the image: 1st parfor %0.5f sec - 2nd for %0.5f seconds.\n', time1, time2);
 
 end

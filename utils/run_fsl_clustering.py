@@ -74,5 +74,5 @@ def _fsl(output_basename):
 
 if __name__ == "__main__":
 
-    folder_path = r'/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETA'
+    folder_path = r'/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew'
     extract_WM(folder_path)
