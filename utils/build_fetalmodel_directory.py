@@ -3,10 +3,10 @@ import shutil
 
 # Path to the root directory containing sub folders
 #root_directory = '/home/mroulet/Documents/Data/fidon_merged_chuv/'
-root_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew/'
+root_directory = '/home/mroulet/Documents/Data/miccai_submission/feta_chuv/'
 # Create the 'fetalmodel' directory
 #fetalmodel_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/CHUV/'
-fetalmodel_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew2/'
+fetalmodel_directory = '/home/mroulet/Documents/Data/miccai_submission/FETA_CHUV/'
 
 os.makedirs(fetalmodel_directory, exist_ok=True)
 

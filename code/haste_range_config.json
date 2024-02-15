@@ -1,6 +1,6 @@
 {
     "AcquisitionType": "HasteCustom",
-    "FetalModel": {"range": ["STA", "CHUV", "FETA"], "default": null},
+    "FetalModel": {"range": ["STA", "FIDON_CHUV", "FETA_CHUV"], "default": null},
     "INU": "./code/rf20_B.rawb",
     "SimResampling": "false",
     "SimCrop": "true",

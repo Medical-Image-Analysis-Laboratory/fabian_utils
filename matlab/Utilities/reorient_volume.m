@@ -64,6 +64,6 @@ NewAffine = Affine(:, [ornt 4]);
 NewSimRes = SimRes(ornt);
 
 % Display message for debugging
-sprintf('The volume was successfully reoriented.')
+%sprintf('The volume was successfully reoriented.')
 
 end

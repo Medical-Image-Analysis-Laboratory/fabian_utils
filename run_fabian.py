@@ -2,6 +2,7 @@ import numpy as np
 import json
 import argparse
 import random
+import pandas as pd
 import matlab.engine
 import os
 import time 
@@ -72,8 +73,6 @@ class Simulation:
         self.Shift_mm = float(self.set_param_value(args.Shift_mm, config_dict.get('Shift_mm')))
         self.FlipAngle = round(float(self.set_param_value(args.FlipAngle, config_dict.get('FlipAngle'))),2)
         self.TEeff = round(float(self.set_param_value(args.TEeff, config_dict.get('TEeff'))),2)
-        self.GA = round(self.set_param_value(args.GA, config_dict.get('GA')))
-        #self.GA = self.get_ga(self.FetalBrainModelPath)
 
         # Motion
         self.MotionLevel = self.set_param_value(args.MotionLevel, config_dict.get('MotionLevel'))
@@ -102,19 +101,33 @@ class Simulation:
 
         # Paths
         if self.FetalModel == 'STA':
-            self.SubID = self.GA
+            self.set_GA(args)
             self.FetalBrainModelPath = args.model + self.FetalModel + str(self.SubID) + '/'
         else:
+            self.set_GA(args)
             self.FetalBrainModelPath = args.model + 'sub-' + str(self.SubID).zfill(3) + '/'
 
         self.set_json_filepath()
 
+    def set_GA(self,args):
+        if self.FetalModel == 'STA':
+            self.GA = self.SubID
+        else:
+            # Load the CSV file into a DataFrame
+            df = pd.read_csv(args.model + 'sub_meta.csv')
+
+            # Function to get gestational age based on subject ID
+            try:
+                self.GA = round(float(df.loc[df['participant_id'] == f'sub-{self.SubID:03}', 'gestational_age'].values[0]))
+            except IndexError:
+                self.GA = 0
+
     def set_json_filepath(self):
         #json_dir = self.OutputFolder + 'code/config/'
-        json_dir = '/home/mroulet/Documents/Data/FaBIAN/' + 'sim-' + f'{self.SimID:03}' + '/00_code/config/'
+        json_dir = self.OutputFolder + 'code/config/' # clean this !!
         if not os.path.exists(json_dir):
             os.makedirs(json_dir)
-        self.JsonOutFilePath = json_dir + 'sub-' + f"{self.SubID:03}" + '_ses-' +  f"{self.SesID:02}" + '_run-' +  f"{self.RunID:04}" + '_config.json'
+        self.JsonOutFilePath = json_dir + 'sub-' + f"{self.SubID:03}" + '_ses-' +  f"{self.SesID:02}" + '_run-' +  f"{self.RunID:02}" + '_config.json'
     
     def set_param_value(self, user_value, param):
         if user_value is not None:
@@ -149,6 +162,21 @@ class Simulation:
         else:
             raise ValueError("No value is parsed by the user nor default value or range are available in the config.json file you provided.")
 
+    def set_fabian_orientation(self):
+        try:
+            eng = matlab.engine.start_matlab()
+            eng.rng("shuffle")
+            eng.addpath('matlab/Utilities')   
+            eng.addpath('matlab/')
+
+            self.Orientation = eng.set_orientation(self.FetalBrainModelPath,self.FetalModel,self.SubID,self.Orientation,nargout=1)
+
+        except Exception as e:
+            print("Error: FaBIAN Orientation simulation parameters generated FaBIAN crash:", e)
+    
+        finally:
+            eng.quit()
+
     def set_fabian_motion(self):
         try:
             eng = matlab.engine.start_matlab()
@@ -163,7 +191,7 @@ class Simulation:
                 self.Motion = eng.set_motion(self.MotionLevel,nargout=1)
 
         except Exception as e:
-            print("Error: simulation parameters generated FaBIAN crash:", e)
+            print("Error: FabIAN Motion simulation parameters generated FaBIAN crash:", e)
     
         finally:
             eng.quit()
@@ -206,9 +234,9 @@ class Simulation:
                 start_time = time.time()
                 self.to_json()  
                 self.call_fabian(log)
-                log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:04} Computational Time: {time.time()-start_time}")
+                log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Computational Time: {time.time()-start_time}")
             else:
-                log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:04} Missing files in directory: simulation is skipped")
+                log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Missing files in directory: simulation is skipped")
             
     def call_fabian(self,log=Logging):
         try:
@@ -260,7 +288,7 @@ class Simulation:
                                             self.GA)
 
         except matlab.engine.MatlabExecutionError as matlab_error:
-            log.logger.error(f"sub-{self.SubID}_ses-{self.SesID}_run-{self.RunID} MATLAB Execution Error: {matlab_error}")
+            log.logger.error(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} MATLAB Execution Error: {matlab_error}")
 
         finally:
             # Stop matlab engine
@@ -441,15 +469,17 @@ def study_TE_flipangle(args):
 def test_simulation(args):
 
     sim_id = 8
-    ses_id = 7
-
+    ses_id = 12
+    args.FetalModel = "FETA_CHUV"
+    args.SDnoise = 0.0001
     # Log initialization
     log = Logging(args.out + 'log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log')
-    log.logger.info("Test for debugging FaBIAN: Matlab Process error with FETA atlas")
+    log.logger.info("Test for debugging FaBIAN: fsl_clustering bug")
 
-    for run_id in range(1,2):
-        ids = {'SimID': sim_id, 'SubID': 24, 'SesID': ses_id, 'RunID': run_id}
+    for sub_id in range(2,3):
+        ids = {'SimID': sim_id, 'SubID': sub_id, 'SesID': ses_id, 'RunID': 1}
         sim = Simulation(args,ids)
+        sim.set_fabian_orientation()
         sim.run_simulation(log) 
 
 def pick_random_sub(directory_path,fetal_model):
@@ -470,42 +500,69 @@ def pick_random_sub(directory_path,fetal_model):
 
     return random.choice(folder_numbers)
 
-def random_simulation_physical(args):
-    sim_id = 9
-    ses_id = 1
+def get_subs(directory_path, fetal_model):
+    # Check if the input is a valid directory
+    if not os.path.isdir(directory_path):
+        raise ValueError('Input is not a valid directory.')
 
-    log_filename = args.out + '00_code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
-    while os.path.exists(log_filename):
-        ses_id += 1
-        log_filename = args.out + '00_code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
+    # Get the directory contents
+    dir_contents = os.listdir(directory_path)
+    if fetal_model == "STA":
+         # Extract numbers from folder names using regular expression
+        folder_numbers = [int(re.search(r'STA(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'STA(\d+)', folder)]
+    else:
+        # Extract numbers from folder names using regular expression
+        folder_numbers = [int(re.search(r'sub-(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'sub-(\d+)', folder)]
+
+    return sorted(folder_numbers)
+
+def is_simulated(args,sub_id,ses_id,run_id):
+
+    json_config = args.out + 'code/config/' + 'sub-' + f"{sub_id:03}" + '_ses-' +  f"{ses_id:02}" + '_run-' +  f"{run_id:02}" + '_config.json'
+
+    if os.path.exists(json_config):
+        return True
+    else:
+        return False
+
+def random_simulation_physical(args):
+    sim_id = 12
+    ses_id = 1
+    args.FetalModel = "FIDON_CHUV"
+
+    log_filename = args.out + 'code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
+    #while os.path.exists(log_filename):
+    #    ses_id += 1
+    #    log_filename = args.out + 'code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
 
     # Log initialization
     log = Logging(log_filename)
-    log.logger.info("Random Simulation using FabianBrainProperties and using 3 sets of data: CHUV, FETA, STA")
+    log.logger.info("Random Simulation using FabianBrainProperties and FIDON_CHUV atlas: generation of 10 runs per subject (11 to 20)")
 
-    root_data = '/home/mroulet/Documents/Data/FaBIAN/sim-' + f'{sim_id:03}' + '/'
-    root_atlas = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/'
+    #root_data = '/home/mroulet/Documents/Data/FaBIAN/sim-' + f'{sim_id:03}' + '/'
+    #root_atlas = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/'
 
-    for run_id in range(1,5001):
-        args.FetalModel = random.choice(["STA","CHUV", "FETA"])
-        args.out = os.path.join(root_data,args.FetalModel) + "/"
-        args.model = os.path.join(root_atlas,args.FetalModel) + "/"
+    for run_id in range(3,42):        
+        for sub_id in get_subs(args.model,args.FetalModel):
 
-        sub_id = pick_random_sub(args.model,args.FetalModel)
+            if is_simulated(args,sub_id,ses_id,run_id):
+                continue
+            else:
 
-        ids = {'SimID': sim_id, 'SubID': sub_id, 'SesID': ses_id, 'RunID': run_id}
-        sim = Simulation(args,ids)
+                ids = {'SimID': sim_id, 'SubID': sub_id, 'SesID': ses_id, 'RunID': run_id}
+                sim = Simulation(args,ids)
 
-        log.logger.info(f"Starting Simulation {args.FetalModel}: sub-{sub_id:03}_ses-{ses_id:02}_run-{run_id:04}")
+                log.logger.info(f"Starting Simulation {args.FetalModel}: sub-{sim.SubID:03}_ses-{ses_id:02}_run-{run_id:02}")
 
-        sim.run_simulation(log) 
+                sim.run_simulation(log) 
 
     # Below the command to run the simulation
     """ python run_fabian.py 
     --config /home/mroulet/Documents/PYTHON/fabian_utils/code/haste_range_config.json 
     --out /home/mroulet/Documents/Data/FaBIAN/sim-007/ 
     --model /home/mroulet/Documents/PYTHON/fabian_utils/atlas/STA 
-    --FabianBrainProperties """
+    --FabianBrainProperties 
+    --FetalModel FIDON_CHUV """
         
 #**********************************************************
 def main():
@@ -520,7 +577,7 @@ def main():
     #study_TE_flipangle(args)   
 
     # DEBUG TEST
-    #test_simulation(args)    
+    # test_simulation(args)    
 
     # RANDOM SIMULATION
     random_simulation_physical(args)

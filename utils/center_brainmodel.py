@@ -3,6 +3,11 @@ import numpy as np
 import nibabel as ni
 import SimpleITK as sitk
 import os
+import monai
+from monai.transforms import (LoadImage,
+                              SaveImage,
+                              CropForegroundd,
+                              Spacing,)
 
 """Author: Thomas Sanchez"""
 
@@ -211,17 +216,63 @@ def get_img_size(root_directory):
     for i,size,px in zip(sorted_info_list, sorted_sizexs, sorted_maxpxs):
         print(f'{i}: {size} - {px}')
 
+def gen_crop_monai(root_directory):
+
+    # Walk through the directory
+    for dirpath, dirnames, filenames in sorted(os.walk(root_directory)):
+        for filename in filenames:
+            # Check if the filename contains 'dseg'
+            if ('tissue' in filename) and ('remapped' not in filename):
+                
+                tissue = LoadImage()(os.path.join(dirpath,filename))
+                image = LoadImage()(os.path.join(dirpath,filename.replace('tissue', 'T2w')))
+                pve0 = LoadImage()(os.path.join(dirpath,filename.replace('tissue', 'WM_pve_0')))
+                pve1 = LoadImage()(os.path.join(dirpath,filename.replace('tissue', 'WM_pve_1')))
+                pve2 = LoadImage()(os.path.join(dirpath,filename.replace('tissue', 'WM_pve_2')))
+                #mask = LoadImage()(os.path.join(dirpath,filename.replace('tissue', 'mask')))
+
+                image = image.unsqueeze(0)
+                tissue = tissue.unsqueeze(0)
+                pve0 = pve0.unsqueeze(0)
+                pve1 = pve1.unsqueeze(0)
+                pve2 = pve2.unsqueeze(0)
+
+                #mask = mask.unsqueeze(0)
+
+                data = {'image': image, 'label': tissue, 'pve0': pve0, 'pve1': pve1, 'pve2': pve2}
+                data_cropped = CropForegroundd(keys=['image', 'label', 'pve0', 'pve1', 'pve2'],
+                                            source_key='label')(data)
+
+                image = data_cropped['image']
+                tissue = data_cropped['label']
+                pve0 = data_cropped['pve0']
+                pve1 = data_cropped['pve1']
+                pve2 = data_cropped['pve2']
+                #mask = data_cropped['mask']
+                
+                # resample to 0.8mm isotropic
+                #image = Spacing((0.8, 0.8, 0.8),mode='bilinear')(image)
+                #tissue = Spacing((0.8, 0.8, 0.8),mode='nearest')(tissue)
+
+                os.remove(os.path.join(dirpath,filename))
+                os.remove(os.path.join(dirpath,filename.replace('tissue', 'T2w')))
+                os.remove(os.path.join(dirpath,filename.replace('tissue', 'WM_pve_0')))
+                os.remove(os.path.join(dirpath,filename.replace('tissue', 'WM_pve_1')))
+                os.remove(os.path.join(dirpath,filename.replace('tissue', 'WM_pve_2')))
+
+                SaveImage(dirpath, separate_folder=False, output_postfix='')(tissue,)
+                SaveImage(dirpath, separate_folder=False, output_postfix='')(image,)
+                SaveImage(dirpath, separate_folder=False, output_postfix='')(pve0,)
+                SaveImage(dirpath, separate_folder=False, output_postfix='')(pve1,)
+                SaveImage(dirpath, separate_folder=False, output_postfix='')(pve2,)
+
 # **********************************************************************************
 # Path to the root directory
-root_directory = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/FETAnew/'
+root_directory = '/home/mroulet/Documents/Data/miccai_submission/FIDON_CHUV/subs_prior/'
+#gen_crop_monai(root_directory)
 #gen_mask_from_seg(root_directory)
 #gen_crop(root_directory)
 #get_img_size(root_directory)
 
-noises = np.logspace(0.0001,0.005,1000)
 
-# Define the range in logarithmic space
-log_range = np.logspace(np.log10(0.0001), np.log10(0.005), num=1000)
 
-for i in range(10):
-    print(np.random.choice(log_range))
