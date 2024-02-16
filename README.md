@@ -152,3 +152,4 @@ White Matter Heterogeneity:
 - `set_motion`, `motion_transform_mr`: new functions that enables inistialisation of custom motion bounds. `set_motion` takes a motion level in and outputs a matlab struct with motion bounds. This parameter is then input to FaBIAN main function and as argsin of `motion_transform_mr`.
 - `clipvalue`: is now a parameter to FaBIAN_main function.
 - `T1, T2 and clip values` can all be set randomly. 
+- `set_orientation`: new function that checks fetal model affine is compatible with FaBIAN simualation as the function `reorient_volume`is not robust to all types of affine. If user input orientation is not compatible with fetal model affine, new compatible orientation is set, else, continue.

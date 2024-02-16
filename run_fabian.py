@@ -41,13 +41,13 @@ class Simulation:
     def __init__(self,args,ids):
 
         self.ConfigFilePath = args.config
-        self.OutputFolder = args.out
+        self.OutputFolder = args.out + f'sim-{args.sim:03}/'
 
         with open(self.ConfigFilePath, 'r') as file:
             config_dict = json.load(file)
 
         # Simulation Parameters
-        self.FetalModel = args.FetalModel if args.FetalModel else config_dict.get('FetalModel')
+        self.FetalModel = get_top_dir(args.model)
         self.INU = config_dict.get('INU')
         self.SimResampling = config_dict.get('SimResampling')
         self.SimCrop = config_dict.get('SimCrop')
@@ -222,7 +222,6 @@ class Simulation:
             json_data[attribute] = value
         with open(self.JsonOutFilePath, "w") as json_file:
             json.dump(json_data, json_file, indent=4)
-        print(f"Simulation parameters written to : {self.JsonOutFilePath}")
 
     def run_simulation(self,log=Logging):
 
@@ -232,8 +231,8 @@ class Simulation:
             
             if is_model_in(self.FetalBrainModelPath):
                 start_time = time.time()
-                self.to_json()  
-                self.call_fabian(log)
+                #self.to_json()  
+                #self.call_fabian(log)
                 log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Computational Time: {time.time()-start_time}")
             else:
                 log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Missing files in directory: simulation is skipped")
@@ -335,8 +334,9 @@ def parse_arguments():
     parser.add_argument('--config', help='Path to the configuration file', required=True)
     parser.add_argument('--out', help='Path to the output directory', required=True)
     parser.add_argument('--model', help='Path to the atlas fetal brain model directory ../STA/', required= True)
-    # Fetal Model
-    parser.add_argument('--FetalModel', help='Fetal Model: [STA, CHUV, STA] (default = random)',required=False)
+    parser.add_argument('--sim', type=int, help='ID of the simulation', required = True)
+    parser.add_argument('--nruns', type=int, help='Number of run per subject within atlas', required=True)
+
     # Integers
     parser.add_argument('--WMheterogeneity', type=int, choices=[0,1], help='WM Heterogeneity: 1 - ON, 0 - OFF (default=1)',required=False)
     parser.add_argument('--GA', type=int, help='Gestational age range: [21,35] weeks (default=random)',required=False) 
@@ -500,12 +500,22 @@ def pick_random_sub(directory_path,fetal_model):
 
     return random.choice(folder_numbers)
 
-def get_subs(directory_path, fetal_model):
+def get_top_dir(path):
+    # Use os.path.split to split the path into head and tail
+    head, tail = os.path.split(path)
+    # If the path ends with a separator, get the directory before it
+    if tail == '':
+        head, tail = os.path.split(head)
+
+    return tail
+
+def get_subs(directory_path):
     # Check if the input is a valid directory
     if not os.path.isdir(directory_path):
         raise ValueError('Input is not a valid directory.')
 
     # Get the directory contents
+    fetal_model = get_top_dir(directory_path)
     dir_contents = os.listdir(directory_path)
     if fetal_model == "STA":
          # Extract numbers from folder names using regular expression
@@ -525,25 +535,39 @@ def is_simulated(args,sub_id,ses_id,run_id):
     else:
         return False
 
-def random_simulation_physical(args):
-    sim_id = 12
-    ses_id = 1
-    args.FetalModel = "FIDON_CHUV"
+def set_out_dir(out_dir,sim_id):
 
-    log_filename = args.out + 'code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
-    #while os.path.exists(log_filename):
-    #    ses_id += 1
-    #    log_filename = args.out + 'code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
+    sim_dir = out_dir + 'sim-' + f'{sim_id:03}/'
+    if not os.path.exists(sim_dir):
+        os.makedirs(sim_dir)
+    if not os.path.exists(sim_dir + 'code/'):
+        os.makedirs(sim_dir + 'code/')
+    if not os.path.exists(sim_dir + 'code/log/'):
+        os.makedirs(sim_dir + 'code/log/')
+    if not os.path.exists(sim_dir + 'code/config/'):
+        os.makedirs(sim_dir + 'code/config/')
+
+def random_simulation_physical(args):
+    
+    sim_id = args.sim
+    ses_id = 1
+
+    set_out_dir(args.out, sim_id)
+    
+    log_filename = args.out + f'sim-{sim_id:03}/code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
+    while os.path.exists(log_filename):
+        ses_id += 1
+        log_filename = args.out + f'sim-{sim_id:03}/code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
 
     # Log initialization
     log = Logging(log_filename)
-    log.logger.info("Random Simulation using FabianBrainProperties and FIDON_CHUV atlas: generation of 10 runs per subject (11 to 20)")
+    if args.FabianBrainProperties:
+        log.logger.info(f"FaBIAN Physical Random Simulation sim-{sim_id:03}_ses{ses_id:02} - Number of run per subject: {args.nruns}")
+    else:
+        log.logger.info(f"FaBIAN++ Random Simulation sim-{sim_id:03}_ses-{ses_id:02} - Number of runs per subject: {args.nruns}")
 
-    #root_data = '/home/mroulet/Documents/Data/FaBIAN/sim-' + f'{sim_id:03}' + '/'
-    #root_atlas = '/home/mroulet/Documents/PYTHON/fabian_utils/atlas/'
-
-    for run_id in range(3,42):        
-        for sub_id in get_subs(args.model,args.FetalModel):
+    for run_id in range(1,args.nruns+1):        
+        for sub_id in get_subs(args.model):
 
             if is_simulated(args,sub_id,ses_id,run_id):
                 continue
@@ -552,7 +576,7 @@ def random_simulation_physical(args):
                 ids = {'SimID': sim_id, 'SubID': sub_id, 'SesID': ses_id, 'RunID': run_id}
                 sim = Simulation(args,ids)
 
-                log.logger.info(f"Starting Simulation {args.FetalModel}: sub-{sim.SubID:03}_ses-{ses_id:02}_run-{run_id:02}")
+                log.logger.info(f"Starting Simulation : sub-{sim.SubID:03}_ses-{ses_id:02}_run-{run_id:02}")
 
                 sim.run_simulation(log) 
 
@@ -562,22 +586,16 @@ def random_simulation_physical(args):
     --out /home/mroulet/Documents/Data/FaBIAN/sim-007/ 
     --model /home/mroulet/Documents/PYTHON/fabian_utils/atlas/STA 
     --FabianBrainProperties 
-    --FetalModel FIDON_CHUV """
+    --FetalModel FIDON_CHUV
+    --sim 12 
+    --nruns 30
+    --info simulationon FIDON_CHUV fetal model x runs"""
         
 #**********************************************************
 def main():
     
     # Parse optional arguments
     args = parse_arguments()
-
-    # SMALL STUDIES
-    #study_noise_ga(args)
-    #study_noise_fov(args)
-    #study_bias_FOV(args)
-    #study_TE_flipangle(args)   
-
-    # DEBUG TEST
-    # test_simulation(args)    
 
     # RANDOM SIMULATION
     random_simulation_physical(args)
