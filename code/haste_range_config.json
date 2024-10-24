@@ -31,8 +31,14 @@
     "T1_WM": {"range": [2324,3098], "default": null, "target": 2711, "n_subrange": 4, "flat_factor": 0.2},
     "T1_GM": {"range": [1955,2434], "default": null, "target": 2195, "n_subrange": 4, "flat_factor": 0.2},
     "T1_CSF": {"range": [3000,4000], "default": null, "target": 4000, "n_subrange": 4, "flat_factor": 0.6},
+    "T1_SKULL": {"range": [1000,1500], "default": null, "target": 1250, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_FAT": {"range": [2500,3000], "default": null, "target": 3500, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_BG": {"range": [3000,4000], "default": null, "target": 1250, "n_subrange": 4, "flat_factor": 0.2},
     "T2_WM": {"range": [0,2000], "default": null, "target": 285, "n_subrange": 4, "flat_factor": 0.2},
     "T2_GM": {"range": [0,2000], "default": null, "target": 181, "n_subrange": 4, "flat_factor": 0.2},
     "T2_CSF": {"range": [0,2000], "default": null, "target": 2000, "n_subrange": 4, "flat_factor": 0.6},
-    "ClipValue": {"range": [0,1], "default": null}
+    "T2_SKULL": {"range": [50,100], "default": null, "target": 75, "n_subrange": 4, "flat_factor": 0.2},
+    "T2_FAT": {"range": [250,350], "default": null, "target": 300, "n_subrange": 4, "flat_factor": 0.2},
+    "T2_BG": {"range": [50,100], "default": null, "target": 75, "n_subrange": 4, "flat_factor": 0.2},
+    "ClipValue": {"range": [0.1,0.9], "default": null}
 }

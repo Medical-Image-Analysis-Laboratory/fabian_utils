@@ -79,20 +79,6 @@ class Simulation:
         self.MotionBounds = args.MotionBounds
         self.set_fabian_motion()
 
-        # Tissue Properties
-        self.FabianBrainProperties = args.FabianBrainProperties
-        if self.FabianBrainProperties:
-            self.set_fabian_brainproperties()
-            self.ClipValue = 'adapt' # so the matlab function run as expected
-        else:
-            self.T1_WM = round(float(self.set_Tvalue(args.T1_WM, config_dict.get('T1_WM'))))
-            self.T1_GM = round(float(self.set_Tvalue(args.T1_GM, config_dict.get('T1_GM'))))
-            self.T1_CSF = round(float(self.set_Tvalue(args.T1_CSF, config_dict.get('T1_CSF'))))
-            self.T2_WM = round(float(self.set_Tvalue(args.T2_WM, config_dict.get('T2_WM'))))
-            self.T2_GM = round(float(self.set_Tvalue(args.T2_GM, config_dict.get('T2_GM'))))
-            self.T2_CSF = round(float(self.set_Tvalue(args.T2_CSF, config_dict.get('T2_CSF'))))
-            self.ClipValue = round(float(self.set_param_value(args.ClipValue, config_dict.get('ClipValue'))),2)
-
         # Simulation SUB SES RUN IDs
         self.SubID = ids['SubID']
         self.SesID = ids['SesID']
@@ -108,6 +94,32 @@ class Simulation:
             self.FetalBrainModelPath = args.model + 'sub-' + str(self.SubID).zfill(3) + '/'
 
         self.set_json_filepath()
+
+        # Tissue Properties
+        self.FabianBrainProperties = args.FabianBrainProperties
+        if self.FabianBrainProperties:
+            self.set_fabian_brainproperties()
+            self.ClipValue = 'adapt' # so the matlab function run as expected
+        else:
+            self.T1_WM = round(float(self.set_Tvalue(args.T1_WM, config_dict.get('T1_WM'))))
+            self.T1_GM = round(float(self.set_Tvalue(args.T1_GM, config_dict.get('T1_GM'))))
+            self.T1_CSF = round(float(self.set_Tvalue(args.T1_CSF, config_dict.get('T1_CSF'))))
+            self.T2_WM = round(float(self.set_Tvalue(args.T2_WM, config_dict.get('T2_WM'))))
+            self.T2_GM = round(float(self.set_Tvalue(args.T2_GM, config_dict.get('T2_GM'))))
+            self.T2_CSF = round(float(self.set_Tvalue(args.T2_CSF, config_dict.get('T2_CSF'))))
+            self.ClipValue = round(float(self.set_param_value(args.ClipValue, config_dict.get('ClipValue'))),2)
+
+        # Background Simulation
+        self.T1_FAT = round(float(self.set_Tvalue(args.T1_FAT, config_dict.get('T1_FAT'))))
+        self.T1_SKULL = round(float(self.set_Tvalue(args.T1_SKULL, config_dict.get('T1_SKULL'))))
+        self.T1_BG = round(float(self.set_Tvalue(args.T1_BG, config_dict.get('T1_BG'))))
+        self.T2_FAT = round(float(self.set_Tvalue(args.T2_FAT, config_dict.get('T2_FAT'))))
+        self.T2_SKULL = round(float(self.set_Tvalue(args.T2_SKULL, config_dict.get('T2_SKULL'))))
+        self.T2_BG = round(float(self.set_Tvalue(args.T2_BG, config_dict.get('T2_BG'))))
+        self.set_fabian_backgroundproperties(args.Background)
+
+        # Orientation fix for FETA-CHUV
+        self.set_fabian_orientation()
 
     def set_GA(self,args):
         if self.FetalModel == 'STA':
@@ -163,13 +175,14 @@ class Simulation:
             raise ValueError("No value is parsed by the user nor default value or range are available in the config.json file you provided.")
 
     def set_fabian_orientation(self):
+        # not in use for now
         try:
             eng = matlab.engine.start_matlab()
             eng.rng("shuffle")
             eng.addpath('matlab/Utilities')   
             eng.addpath('matlab/')
 
-            self.Orientation = eng.set_orientation(self.FetalBrainModelPath,self.FetalModel,self.SubID,self.Orientation,nargout=1)
+            self.Orientation = eng.set_orientation(self.FetalBrainModelPath,self.FetalModel,self.SubID,self.Orientation,self.Background,nargout=1)
 
         except Exception as e:
             print("Error: FaBIAN Orientation simulation parameters generated FaBIAN crash:", e)
@@ -205,7 +218,25 @@ class Simulation:
             [self.T1_WM,self.T2_WM,self.T1_GM,self.T2_GM,self.T1_CSF,self.T2_CSF]  = eng.set_brainproperties(self.B0,nargout=6)
         
         except Exception as e:
-            print("Error: simulation parameters generated FaBIAN crash:", e)
+            print("Error: Brain properties simulation parameters generated FaBIAN crash:", e)
+        
+        finally:
+            eng.quit()
+
+    def set_fabian_backgroundproperties(self,background):
+
+        try:
+            eng = matlab.engine.start_matlab()
+            eng.rng("shuffle")
+            eng.addpath('matlab/Utilities')   
+            eng.addpath('matlab/')
+            if background:
+                self.Background  = eng.set_backgroundproperties(background, self.T1_FAT, self.T1_SKULL, self.T1_BG, self.T2_FAT, self.T2_SKULL, self.T2_BG, nargout=1)
+            else:
+                self.Background  = eng.set_backgroundproperties(background, nargout=1)
+
+        except Exception as e:
+            print("Error: Background simulation parameters generated FaBIAN crash:", e)
         
         finally:
             eng.quit()
@@ -231,8 +262,8 @@ class Simulation:
             
             if is_model_in(self.FetalBrainModelPath):
                 start_time = time.time()
-                #self.to_json()  
-                #self.call_fabian(log)
+                self.to_json()  
+                self.call_fabian(log)
                 log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Computational Time: {time.time()-start_time}")
             else:
                 log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Missing files in directory: simulation is skipped")
@@ -270,6 +301,7 @@ class Simulation:
                                             self.ACF,
                                             self.RefLines,
                                             self.Motion,
+                                            self.Background,
                                             self.ZIP,
                                             self.ReconMatrix,
                                             self.SDnoise,
@@ -335,7 +367,7 @@ def parse_arguments():
     parser.add_argument('--out', help='Path to the output directory', required=True)
     parser.add_argument('--model', help='Path to the atlas fetal brain model directory ../STA/', required= True)
     parser.add_argument('--sim', type=int, help='ID of the simulation', required = True)
-    parser.add_argument('--nruns', type=int, help='Number of run per subject within atlas', required=True)
+    parser.add_argument('--nruns', type=int, help='Number of run per subject within atlas', required=False)
 
     # Integers
     parser.add_argument('--WMheterogeneity', type=int, choices=[0,1], help='WM Heterogeneity: 1 - ON, 0 - OFF (default=1)',required=False)
@@ -357,18 +389,22 @@ def parse_arguments():
     parser.add_argument('--T1_WM', type=float, help='T1 WM Tissue Property', required=False)
     parser.add_argument('--T1_GM', type=float, help='T1 GM Tissue Property', required=False)
     parser.add_argument('--T1_CSF', type=float, help='T1 CSF Tissue Property', required=False)
+    parser.add_argument('--T1_FAT', type=float, help='T1 Fat Property', required=False)
+    parser.add_argument('--T1_SKULL', type=float, help='T1 Skull Property', required=False)
+    parser.add_argument('--T1_BG', type=float, help='T1 Background Property', required=False)
     parser.add_argument('--T2_WM', type=float, help='T2 WM Tissue Property', required=False)
     parser.add_argument('--T2_GM', type=float, help='T2 GM Tissue Property', required=False)
-    parser.add_argument('--T2_CSF', type=float, help='T2 cSF Tissue Property', required=False)
+    parser.add_argument('--T2_CSF', type=float, help='T2 CSF Tissue Property', required=False)
+    parser.add_argument('--T2_FAT', type=float, help='T2 Fat Property', required=False)
+    parser.add_argument('--T2_SKULL', type=float, help='T2 Skull Property', required=False)
+    parser.add_argument('--T2_BG', type=float, help='T2 Background Property', required=False)
     parser.add_argument('--ClipValue', type=float, help='control value set not to deviate T1 and T2 values more than a specific percentage', required=False)
+    # Background simulation
+    parser.add_argument('--Background', action='store_true', help='Enable background simulation', required=False)
 
     args = parser.parse_args()
 
     return args
-
-def motion_arguments(MotionBounds, MotionLevel=1):
-    if MotionLevel == 5 and MotionBounds is None:
-        raise argparse.ArgumentTypeError("MotionBounds is obligatory when MotionLevel is set to 5 (custom motion bounds).")
 
 def is_model_in(model_path):
     model_dir = model_path.split("/")[-2]
@@ -378,127 +414,14 @@ def is_model_in(model_path):
     elif (not os.path.isfile(model_path + model_dir + '_tissue.nii.gz') or
           not os.path.isfile(model_path + model_dir + '_WM_pve_0.nii.gz') or 
           not os.path.isfile(model_path + model_dir + '_WM_pve_1.nii.gz') or
-          not os.path.isfile(model_path + model_dir + '_WM_pve_2.nii.gz')):
+          not os.path.isfile(model_path + model_dir + '_WM_pve_2.nii.gz') #or
+          #not os.path.isfile(model_path + model_dir + '_tissue_BG.nii.gz')
+          ):
         
         return False #ValueError(f'Missing segmentation file(s): {model_dir}_tissue.nii.gz or {model_dir}_WM_pve_X.nii.gz')
 
     else:
         return True
-
-def study_bias_FOV(args,log):
-
-    run_ids = [1,2,3,4,5,6]
-    FOVs = [324, 300, 248, 200, 152, 120]
-    base_resolutions = [405, 375, 310, 250, 190, 150]
-
-    for fov, base_resolution, run_id in zip(FOVs, base_resolutions, run_ids):
-        ids = {'SubID': None, 'SesID': 1, 'RunID': run_id}
-        sim = Simulation(args,ids)
-        sim.FOVPhase = float(fov)
-        sim.FOVRead = float(fov)
-        sim.BaseResolution = float(base_resolution)
-        sim.ReconMatrix = float(base_resolution)
-        sim.RunID = run_id
-        sim.run_simulation(log)
-
-def study_noise(args):
-
-    # Log initialization
-    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-01.log')
-
-    slice_thicknesses = [3., 2.5, 2., 1.5, 1.2, 1., 0.8]
-
-    log.logger.info("Noise Study: 6 runs with fixed parameters except thicknesses: [3., 2.5, 2., 1.5, 1.2, 1., 0.8]")
-    for slice_thickness, run_id in zip(slice_thicknesses, range(1,len(slice_thicknesses))):
-        ids = {'SubID': None, 'SesID': 1, 'RunID': run_id}
-        sim = Simulation(args,ids)
-        sim.SliceThickness = slice_thickness
-        sim.run_simulation(log)
-
-def study_noise_fov(args):
-
-    # Log initialization
-    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-05.log')
-
-    run_ids = [1,2,3,4,5,6]
-    FOVs = [324, 300, 248, 200, 152, 120]
-    base_resolutions = [405, 375, 310, 250, 190, 150]
-
-    log.logger.info("Noise Study: 6 runs with fixed parameters except fov and base_resolution, res =3.0, FOV: [324, 300, 248, 200, 152, 120]")
-    for FOV, base_resolution, run_id in zip(FOVs, base_resolutions, run_ids):
-        ids = {'SubID': None, 'SesID': 5, 'RunID': run_id}
-        sim = Simulation(args,ids)
-        sim.FOVPhase = float(FOV)
-        sim.FOVRead = float(FOV)
-        sim.BaseResolution = float(base_resolution)
-        sim.ReconMatrix = float(base_resolution)
-        sim.run_simulation(log)
-
-def study_noise_ga(args):
-    # Log initialization
-    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-04.log')
-
-    GAs = [26, 30, 34, 38]
-
-    log.logger.info("Noise Study: 6 runs with fixed parameters except fov and base_resolution, res =0.8, GA: [26, 30, 34, 38]")
-    for ga, run_id in zip(GAs, range(1,5)):
-        ids = {'SubID': ga, 'SesID': 4, 'RunID': run_id}
-        args.GA = ga
-        sim = Simulation(args,ids)
-        sim.run_simulation(log)
-
-def study_TE_flipangle(args):
-
-    # Log initialization
-    log = Logging(args.out + 'code/log/' + datetime.now().strftime("%Y%m%d%H%M") + '_sim-006_ses-07.log')
-    log.logger.info("Random study: 40 runs with fixed parameters except flip angle ACF=1, RefLines=0: [140,150,160,180,190] and TEs: [90, 120, 150, 180, 210, 240, 270, 300,330]")
-
-    flipangles = [140,150,160,170,180,190]
-    TEs = [90, 120, 150, 180, 210, 240, 270, 300, 330]
-    i=0
-    for flipangle in flipangles:
-        for TEeff in TEs:
-            i+=1
-            ids = {'SubID': None, 'SesID': 7, 'RunID': i}
-            sim = Simulation(args,ids)
-            sim.FlipAngle = float(flipangle)
-            sim.TEeff = float(TEeff)
-            log.logger.info(f"Starting simulation: Flip Angle: {str(flipangle)} TE: {str(TEeff)}")
-            sim.run_simulation(log)
-
-def test_simulation(args):
-
-    sim_id = 8
-    ses_id = 12
-    args.FetalModel = "FETA_CHUV"
-    args.SDnoise = 0.0001
-    # Log initialization
-    log = Logging(args.out + 'log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log')
-    log.logger.info("Test for debugging FaBIAN: fsl_clustering bug")
-
-    for sub_id in range(2,3):
-        ids = {'SimID': sim_id, 'SubID': sub_id, 'SesID': ses_id, 'RunID': 1}
-        sim = Simulation(args,ids)
-        sim.set_fabian_orientation()
-        sim.run_simulation(log) 
-
-def pick_random_sub(directory_path,fetal_model):
-    # Check if the input is a valid directory
-    if not os.path.isdir(directory_path):
-        raise ValueError('Input is not a valid directory.')
-
-    # Get the directory contents
-    dir_contents = os.listdir(directory_path)
-    if fetal_model == "STA":
-         # Extract numbers from folder names using regular expression
-        folder_numbers = [int(re.search(r'STA(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'STA(\d+)', folder)]
-    else:
-        # Extract numbers from folder names using regular expression
-        folder_numbers = [int(re.search(r'sub-(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'sub-(\d+)', folder)]
-
-    folder_numbers = sorted(folder_numbers)
-
-    return random.choice(folder_numbers)
 
 def get_top_dir(path):
     # Use os.path.split to split the path into head and tail
@@ -548,12 +471,15 @@ def set_out_dir(out_dir,sim_id):
         os.makedirs(sim_dir + 'code/config/')
 
 def random_simulation_physical(args):
+    """random_simulation_physical runs a simulation for a specific atlas (STA/FETA_CHUV/FIDON_CHUV). 
+    It will run N simulation per subject within atlas given the number of runs specified."""
     
     sim_id = args.sim
     ses_id = 1
 
     set_out_dir(args.out, sim_id)
     
+    # update session ID if current session ID already simualated + set logfilename
     log_filename = args.out + f'sim-{sim_id:03}/code/log/' + 'sim-' + f'{sim_id:03}' + '_ses-' + f'{ses_id:02}' + '.log'
     while os.path.exists(log_filename):
         ses_id += 1
@@ -566,6 +492,7 @@ def random_simulation_physical(args):
     else:
         log.logger.info(f"FaBIAN++ Random Simulation sim-{sim_id:03}_ses-{ses_id:02} - Number of runs per subject: {args.nruns}")
 
+    # Launch simulation runs (N runs per sub/GA specified in arguments)
     for run_id in range(1,args.nruns+1):        
         for sub_id in get_subs(args.model):
 
@@ -580,8 +507,9 @@ def random_simulation_physical(args):
 
                 sim.run_simulation(log) 
 
-    # Below the command to run the simulation
-    """ python run_fabian.py 
+    # Below an example command to run the simulation on MIALtron
+    """
+    python run_fabian.py 
     --config /home/mroulet/Documents/PYTHON/fabian_utils/code/haste_range_config.json 
     --out /home/mroulet/Documents/Data/FaBIAN/sim-007/ 
     --model /home/mroulet/Documents/PYTHON/fabian_utils/atlas/STA 
@@ -589,8 +517,7 @@ def random_simulation_physical(args):
     --FetalModel FIDON_CHUV
     --sim 12 
     --nruns 30
-    --info simulationon FIDON_CHUV fetal model x runs"""
-        
+    """
 #**********************************************************
 def main():
     

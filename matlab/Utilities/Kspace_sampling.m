@@ -281,6 +281,7 @@ for iSlice=1:length(interleavedSlices_index)
     % Sum the contribution of all voxels at the same (x,y) location across
     % the slice thickness direction
     Sl_Volume(:,:,interleavedSlices_index(iSlice),:) = sum(T2decay_zp(:,:,index:index+round(SliceThickness/SubunitRes)-1,:),3);
+
     % Simulation of k-space sampling as for FSE sequences
 %     tic
     for iEcho=1:size(Sl_Volume,4)
@@ -288,6 +289,7 @@ for iSlice=1:length(interleavedSlices_index)
 %         disp(['Echo ', num2str(iEcho), ' of ', num2str(size(Sl_Volume,4))])
         SLAB(:,:,interleavedSlices_index(iSlice),iEcho) = Resize_Volume(fft2c(Resize_Volume(Sl_Volume(:,:,interleavedSlices_index(iSlice),iEcho), [round(FOVRead/SimResReo(1)), round(FOVPhase/SimResReo(2)), NbSlices])), [BaseResolution, nPE, NbSlices]);
     end
+
 %     toc
 %     tic
 	% Calculating k-space sampling based on the desired echo time occuring

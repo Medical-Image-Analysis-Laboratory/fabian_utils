@@ -116,6 +116,7 @@ function FSEimages = FaBiAN_main_CHUV_DA(FetalBrainModelPath, ...
                                                          ACF, ...
                                                     RefLines, ...
                                                       Motion, ...
+                                                  Background,...
                                                          ZIP, ...
                                                  ReconMatrix, ...
                                                      SDnoise, ...
@@ -134,7 +135,7 @@ function FSEimages = FaBiAN_main_CHUV_DA(FetalBrainModelPath, ...
                                                       varargin)
 
 % Input check
-if nargin < 40
+if nargin < 41
     error('Missing input(s).');
 %elseif nargin > 38
 %    error('Too many inputs.');
@@ -328,7 +329,8 @@ OutputRefT2map = strcat(DerivativesRefT2mapPath, 'sub-', sprintf('%03s',num2str(
 % gestational age GA
 [FetalBrain, ModelNiiinfo] = brain_model(FetalBrainModelPath, ...
                                                   FetalModel, ...
-                                                       SubID);
+                                                       SubID,...
+                                                  Background);
 
 % Read the resolution of the 3D anatomical model
 SimRes = ModelNiiinfo.PixelDimensions;
@@ -447,8 +449,8 @@ InterpolationMethod = 'nearest';
                                                  T1_CSF, ...
                                                  T2_CSF,...
                                               ClipValue,...
-                                                 FetalBrainModelPath);
-
+                                    FetalBrainModelPath,...
+                                             Background);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Extended Phase Graph (EPG) simulations                                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -541,10 +543,15 @@ AffineZP = update_affine(         FetalBrainUpsampled, ...
                              AffineUpsampled(1:3,1:3), ...
                          'CenterOffset', CenterOffset);
 
+% MARGAUX - cleaning memory
+clear FetalBrainUpsampled AffineUpsampled T2decayMaxDim T2decay
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  K-space sampling of the simulated FSE images                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+fprintf('Starting K-space sampling')
 % Data sampling follows an interleaved acquisition scheme
 InterleavedSlices_index = interleaved_scheme(NbSlices);
 
@@ -597,9 +604,12 @@ InterleavedSlices_index = interleaved_scheme(NbSlices);
                                                       T1_CSF, ...
                                                       T2_CSF);
 
-
 SqueezeSlVolume = squeeze(SlVolume(:,:,:,30));
 SlVolume_resized = Resize_Volume(SqueezeSlVolume, [round(FOVRead/SimResReo(1)), round(FOVPhaseOversampling/SimResReo(2)), NbSlices]);
+
+% MARGAUX - cleaning memory
+clear SlVolume T2_CSF T1_CSF T2_GM T1_GM T2_WM T1_WM Orientation Shift AxcodesReo SimRes Affine WMheterogeneity SubID GA RefLines
+clear ACF nPE SliceProfile TR TEeff FlipAngle ESP ETL FetalBrainTissues B1MapUpsampled FetalBrainFOV T2decayZP Motion
 
 % Update the orientation matrix of the modified fetal brain model while
 % taking into account the deviation from the center of the anatomical model
@@ -781,6 +791,9 @@ end
 niftiwrite(ReconLabelMap, OutputLabelsReo, MaskNiiinfo, 'Compressed', true);
 niftiwrite(ReconBinaryMask, OutputMaskReo, MaskNiiinfo, 'Compressed', true);
 
+% MARGAUX - cleaning memory
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Depending on the application, resampling of the simulated images       %
 %  might be needed                                                        %
@@ -809,6 +822,10 @@ switch SimResampling
         SimVoxSize = [(FOVRead/ReconMatrix)*ResamplingRead (FOVPhaseOversampling/(1+PhaseOversampling))/ReconMatrix*ResamplingPhase SliceThickness+SliceGap];
         % Initialize the orientation matrix of the simulated images
         NewRotations = ReconAffine(1:3,1:3) .* [ResamplingRead ResamplingPhase 1];
+        
+        % MARGAUX - cleaning memory
+        clear ResamplingRead ResamplingPhase SliceGap SliceThickness ReconMatrix FOVRead FOVPhaseOversampling
+
         % Update the orientation matrix of the modified fetal brain model
         CenterOffset = [0 0 0];
         if mod(size(ResReconImages,1)-size(ReconFSEimages,1),2)~=0
@@ -864,6 +881,9 @@ switch SimResampling
         ResReconMask = ReconBinaryMask;
 end
 
+% MARGAUX - cleaning memory
+clear ReconBinaryMask ReconLabelMap ReconFSEimages ResMaskNiiinfo OutputMaskResampled OutputLabelsResampled OutputImResampled ResReconNiiinfo NewRotations
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Save the final simulated FSE images in the same orientation and space  %
 %  coordinates as the original anatomical model                           %
@@ -907,6 +927,9 @@ if isa(SimLabelMap, SimModelNiiinfo.Datatype)==0
 end
 niftiwrite(SimLabelMap, OutputLabels, SimMaskNiiinfo, 'Compressed', true);
 niftiwrite(SimBinaryMask, OutputMask, SimMaskNiiinfo, 'Compressed', true);
+
+% MARGAUX - cleaning memory
+clear SimBinaryMask SimLabelMap OutputLabels OutputMask SimMaskNiiinfo SimModelNiiinfo SimFSEImages OutputIm SimAffineModelAxcodes ReconAffine SimResReo ModelAxcodes
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Optional: Crop the simulated LR series to the same size as the         %
@@ -972,6 +995,8 @@ if SimCrop=="true"
     niftiwrite(CropLabels, OutputLabelsCrop, CropMaskNiiinfo, 'Compressed', true);
     niftiwrite(CropMask, OutputMaskCrop, CropMaskNiiinfo, 'Compressed', true);
     
+    % MARGAUX - Cleaning memory
+    clear CropMask CropLabels CropAffine ModelCropNiiinfo CropFSEimages CenterOffset OutputMaskCrop OutputLabelsCrop OutputImCrop ModelNiiinfo
 
     % % Save the RefT2map - Margaux
     % if Orientation == 3

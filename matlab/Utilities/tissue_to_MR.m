@@ -197,12 +197,13 @@ function [ref_T1map, ref_T2map] = tissue_to_MR(        fetal_model, ...
                                                             T1_CSF, ...
                                                             T2_CSF,...
                                                          ClipValue,...
-                                               FetalBrainModelPath)
+                                               FetalBrainModelPath,...
+                                                        Background)
 
 % Input check
-if nargin < 21
+if nargin < 22
     error('Missing input(s).');
-elseif nargin > 21
+elseif nargin > 22
     error('Too many inputs!');
 end
 
@@ -307,6 +308,12 @@ else
     Tissue(5,:) = [T1_WM, T2_WM];   %cerebellum
     Tissue(6,:) = [T1_GM, T2_GM];   %subcortical GM
     Tissue(7,:) = [T1_WM, T2_WM];   %brainstem
+
+    if Background.Background
+        Tissue(8,:) = [Background.T1_BG1,Background.T2_BG1];
+        Tissue(9,:) = [Background.T1_BG2,Background.T2_BG2];
+        Tissue(10,:) = [Background.T1_BG3,Background.T2_BG3];
+    end
 end
 
 % Computation time

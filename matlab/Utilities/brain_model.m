@@ -26,12 +26,13 @@
 
 function [Fetal_Brain, nifti_info] = brain_model(  path, ...
                                                   model, ...
-                                                 sub_id)
+                                                 sub_id,...
+                                                 background)
 
 % Input check
-if nargin < 3
+if nargin < 4
     error('Missing input(s).');
-elseif nargin > 3
+elseif nargin > 4
     error('Too many inputs.');
 end
 
@@ -50,8 +51,13 @@ end
 % end
 % MARGAUX BELOW
 atlas_id = strsplit(path,'/');
-nifti_info = niftiinfo(strcat(path,atlas_id{end-1}, '_tissue.nii.gz'));
-Fetal_Brain = niftiread(nifti_info);
+if background.Background
+    nifti_info = niftiinfo(strcat(path,atlas_id{end-1}, '_tissue_BG.nii.gz'));
+    Fetal_Brain = niftiread(nifti_info);
+else
+    nifti_info = niftiinfo(strcat(path,atlas_id{end-1}, '_tissue.nii.gz'));
+    Fetal_Brain = niftiread(nifti_info);
+end
 clear atlas_id
 
 end

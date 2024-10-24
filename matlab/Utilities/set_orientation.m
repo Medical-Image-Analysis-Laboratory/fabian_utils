@@ -1,11 +1,11 @@
-function [Orientation] = set_orientation(FetalBrainModelPath, FetalModel, SubID, Orientation)
+function [Orientation] = set_orientation(FetalBrainModelPath, FetalModel, SubID, Orientation, Background)
 
 % Quick fix to FaBIAN to be able to do simulation on FETA_CHUV atlas. With
 % manual orientation initialization, reorient_volume can fail.
 
 % Load segmented high-resolution anatomical MR images of the fetal brain at
 % gestational age GA
-[FetalBrain, ModelNiiinfo] = brain_model(FetalBrainModelPath,FetalModel,SubID);
+[FetalBrain, ModelNiiinfo] = brain_model(FetalBrainModelPath,FetalModel,SubID,Background);
 
 % Read the resolution of the 3D anatomical model
 SimRes = ModelNiiinfo.PixelDimensions;

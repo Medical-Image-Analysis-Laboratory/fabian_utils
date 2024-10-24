@@ -74,13 +74,12 @@ unwrap_ref_T2map = ref_T2map(:);
 % Exclude background
 imap = imap(umap(:,2)~=0, :);
 umap = umap(umap(:,2)~=0, :);
-
 uT2decay = zeros(size(umap,1), ETL);
 
 % Computation time
 tic
 
-%parpool('FaBIAN');
+parpool('FaBIAN',24);
 parfor (i=1:size(uT2decay,1))
     uT2decay(i, :) = real(cp_cpmg_epg_domain_fplus_fminus(umap(i,1).*90, ETL, umap(i,1).*flipAngle, ESP, umap(i,2), umap(i,3)))/sampling_factor;
 end

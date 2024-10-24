@@ -181,6 +181,7 @@ if isequal(segmentation, 'FAST')
     % As for the 3D anatomical model of the fetal brain in the main.m,
     % shift the FOV of the partial volume maps extracted from the WM mask
     % in the slice thickness direction
+    % MARGAUX QUESTION: why 2 times FOV_shit                                ???
     pve0_reo = FOV_shift(pve0_reo, shift, orientation);
     pve1_reo = FOV_shift(pve1_reo, shift, orientation);
     pve2_reo = FOV_shift(pve2_reo, shift, orientation);

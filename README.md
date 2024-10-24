@@ -1,28 +1,33 @@
- # Readme
+ # ReadMe
 This repository contains a wrapper to run FaBIAN simulation tool via python. It will be use to do synthetic data augmentation on deformed segmentation maps.
 
-It contains some command-line commands that are listed below, as well as utility functions for preprocessing fetal brain model inputs prior running fabian (ex: fsl_clustering.py, Authors: Andrés le Boeuf, Hélène Lajoux).
+It contains some command-line that are listed below, as well as utility functions for preprocessing fetal brain model inputs prior running fabian (ex: fsl_clustering.py, Authors: Andrés le Boeuf, Hélène Lajoux).
+
+Instructions to run fsl_clustering can be found in section XX.
 
 
-## Commands:
+## 1. Commands:
 `python run_fabian.py`
 ```
-usage: run_fabian.py [-h] --config CONFIG --out OUT --model MODEL [--FetalModel FETALMODEL] [--WMheterogeneity {0,1}] [--GA GA]
-                     [--Orientation {1,2,3}] [--B0 {1.5,3.0}] [--FlipAngle FLIPANGLE] [--TEeff TEEFF] [--SDnoise SDNOISE]
-                     [--Shift_mm SHIFT_MM] [--SliceThickness SLICETHICKNESS] [--MotionLevel {0,1,2,3,4,5}] [--MotionBounds [MOTIONBOUNDS]]
+usage: run_fabian.py [-h] --config CONFIG --out OUT --model MODEL --sim SIM [--nruns NRUNS] [--WMheterogeneity {0,1}] [--GA GA] [--Orientation {1,2,3}] [--B0 {1.5,3.0}]
+                     [--FlipAngle FLIPANGLE] [--TEeff TEEFF] [--SDnoise SDNOISE] [--Shift_mm SHIFT_MM] [--SliceThickness SLICETHICKNESS] [--MotionLevel {0,1,2,3,4,5}]
+                     [--MotionBounds [MOTIONBOUNDS]] [--FabianBrainProperties] [--T1_WM T1_WM] [--T1_GM T1_GM] [--T1_CSF T1_CSF] [--T1_FAT T1_FAT] [--T1_SKULL T1_SKULL]
+                     [--T1_BG T1_BG] [--T2_WM T2_WM] [--T2_GM T2_GM] [--T2_CSF T2_CSF] [--T2_FAT T2_FAT] [--T2_SKULL T2_SKULL] [--T2_BG T2_BG] [--ClipValue CLIPVALUE]
+                     [--Background]
 
-
+mandatory arguments:
+  --config                                    Path to the .json configuration file
+  --out OUT                                   Path to the output directory
+  --model MODEL                               Path to the atlas fetal brain model directory ../STA/
+  --sim SIM                                   ID of the simulation
+  --nruns NRUNS                               Number of run per subject within atlas
 
 optional arguments:
   -h, --help                                  show this help message and exit
-  --config CONFIG                             Path to the configuration file
-  --out OUT                                   Path to the output directory
-  --model MODEL                               Path to the atlas fetal brain model directory ../STA/
-  --FetalModel FETALMODEL                     Fetal Model: [STA] (default = STA)
   --WMheterogeneity {0,1}                     WM Heterogeneity: 1 - ON, 0 - OFF (default=1)
   --GA GA                                     Gestational age range: [21,35] weeks (default=random)
   --Orientation {1,2,3}                       Orientation: 1 - sagittal, 2 - coronal, 3 - axial (default=random)
-  --B0 {1.5,3.0}                              B0: field strength (T)
+  --B0 {1.5,3.0}                              B0: field strength (T) (default=1.5)
   --FlipAngle FLIPANGLE                       Flip Angle range: [150,180]° (default=random)
   --TEeff TEEFF                               TEeff should range between [90,300] ms (default=random)
   --SDnoise SDNOISE                           SD Noise should range in between [0.002, 0.2] (default=0.002)
@@ -30,13 +35,37 @@ optional arguments:
   --SliceThickness SLICETHICKNESS             Slice Thickness range: [0.8,5] mm, (default=1.2mm)
   --MotionLevel {0,1,2,3,4,5}                 Motion level: 0 - none , 1 - little, 2 - moderate, 3 - strong, 4 - hyper, 5 - custom (default=0)
   --MotionBounds [MOTIONBOUNDS]               Used if motionlevel=5, Motion Bounds for Translation and Rotation and the ratio of corrupted slice: [5,5,5,20,0.05]
+  --FabianBrainProperties                     Enable FabianBrainProperties and set T1 and T2 values of tissues based on FaBIAN software
+  --T1_WM T1_WM                               T1 WM Tissue Property
+  --T1_GM T1_GM                               T1 GM Tissue Property
+  --T1_CSF T1_CSF                             T1 CSF Tissue Property
+  --T1_FAT T1_FAT                             T1 Fat Property
+  --T1_SKULL T1_SKULL                         T1 Skull Property
+  --T1_BG T1_BG                               T1 Background Property
+  --T2_WM T2_WM                               T2 WM Tissue Property
+  --T2_GM T2_GM                               T2 GM Tissue Property
+  --T2_CSF T2_CSF                             T2 CSF Tissue Property
+  --T2_FAT T2_FAT                             T2 Fat Property (when Background=True)
+  --T2_SKULL T2_SKULL                         T2 Skull Property (when Background=True)
+  --T2_BG T2_BG                               T2 Background Property (when Background=True)
+  --ClipValue CLIPVALUE                       Control value set not to deviate T1 and T2 values more than a specific percentage (see FaBIAN software)
+  --Background                                Enable background simulation (default=False)
 
 ```
 
-Notes: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_default_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range.
+Important Note: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_default_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range. I encourage working with the json file rather than parsing optional arguments.
 
-*Current Status*: `python run_fabian.py` runs any fetal model. Prior running the script you should run fsl_clustering to generate the partial volumes.
+Required libraries: 
+`pip install matlabengine`
 
+## 2. Available configuration files:
+- haste_default_config.json: the template to the haste sequence. 
+- haste_isotropic_config.json: the template to generate isotropic images of 1.
+- haste_range_config.json: tge tenoakte to the haste sequence without any default values. This configuration can be use to simulate image using random parameters within defined range.
+
+
+Example of Configuration file:
+Below you'll find the content of the haste_range_config.json file.
 ```
 {
     "AcquisitionType": "Haste",
@@ -79,31 +108,63 @@ Notes: When optional arguments are not parse by user, parameters values are assi
 
 ```
 
-Required libraries: 
-`pip install matlabengine`
-
-## Available configuration files:
-- haste_default_config.json: the template to the haste sequence. 
-- haste_isotropic_config.json: the template to generate isotropic images of 1.
-- haste_range_config.json: tge tenoakte to the haste sequence without any default values. This configuration can be use to simulate image using random parameters within defined range.
-
 *IMPORTANT NOTES*: default simulation deviates from typical haste sequence as FOV is set to 300x300 instead of 360x360. Base resolution and Reconstruction matrix ar set to 250 so that fabian can generate high isotropic 1.2x1.2x1.2mm images without getting out of memory.
 
-## Atlas Directory Structure
-The atlas directory should be structured as in `./STA/` directory (with subdirectories for each GA)
+## 3. Atlas Directory Structure
+The atlas directory should be structured as in `./STA/` directory (with subdirectories for each GA or for each sub). In a given GA/sub directory, the following file should be present:
+```
+- sub-001_T2w.nii.gz          Input atlas T2w image
+- sub-001_tissue.nii.gz       Segmentation image
+```
+After running fsl clustering, the following files should be in:
+```
+- sub-001_WM.nii.gz           WM segmented T2w image
+- sub-001_WM_pve0.nii.gz      WM partial volume 0
+- sub-001_WM_pve1.nii.gz      WM partial volume 1
+- sub-001_WM_pve2.nii.gz      WM partial volume 2
+- sub-001_BG.nii.gz           Background segmented T2w image (If simulation of the background is required for the FaBIAN simulation)
+- sub-001_BG_pve0.nii.gz      BG partial volume 0
+- sub-001_BG_pve1.nii.gz      BG partial volume 1
+- sub-001_BG_pve2.nii.gz      BG partial volume 2
+- others                      Not used in FaBIAN but generated by fsl
+```
+## 4. Out Directory Structure
+Once a simulation has been run, all data generated by FaBIAN will be found in the data/data_crop/data_reo folders. 
+In addition, the FaBIAN wrapper will output several additional files in the subfolder `code`:
+```
+- `code/config/`              Configurations file for each run (filename : sub-XXX_ses-XX_run-XX_config.json)
+- `code/log`                  Log file of each session run within same simulaion ID. Log python/matlab possible error or warning of each run.
+```
+
+## 5. `run_fsl_clustering` instructions
+
+Prior running FaBIAN make sure you have run `run_fsl_clustering` to output partial volume estimate of the White Matter (anf Background if you simulate background).
+
+`python utils/run_fsl_clustering.py -h`
+```
+usage: run_fsl_clustering.py [-h] --atlas ATLAS [--wm] [--background]
+
+--atlas ATLAS                 Path to the atlas directory
+--wm                          Extract White Matter Partial Volumes
+--background                  Extract Background Partial Volumes (required if you want to simulate the background with FaBIAN)
+```
+
+## 6. Modifications to FaBIAN
+- `set_brainproperties`: new function that inputs brain property given field strength B0. This function can be further modify to enable setting random T1/T2 values given tissues, without any physical meaning for data augmentation (test required thoug, especially of epgm formalism).
+- `set_motion`, `motion_transform_mr`: new functions that enables inistialisation of custom motion bounds. `set_motion` takes a motion level in and outputs a matlab struct with motion bounds. This parameter is then input to FaBIAN main function and as argsin of `motion_transform_mr`.
+- `clipvalue`: is now a parameter to FaBIAN_main function.
+- `T1, T2 and clip values` can all be set randomly. 
+- `set_orientation`: new function that checks fetal model affine is compatible with FaBIAN simuulation as the function `reorient_volume`is not robust to all types of affine. If user input orientation is not compatible with fetal model affine, new compatible orientation is set, else, continue. (NOT ROBUST ENOUGH, some bug renains)
+- `set_backgroundproperties`: new function that inputs backgroung properties. It adds labels for 
 
 
-## ToDos:
-- [ x ] Change input fetal brain model handling: input a directory that contains all required file to run the sim (segmentation and pve_X)
-- [ x ] Enable simulation on all kinds of datasets -> use Andrès fsl_clustering script. 
-- [ x ] Prior work on label maps required though (Vlad on it).
-- [ x ] input random brain properties using set_brainproperties.m 
-- [ x ] Generate json file for each simulation listing parameters
-- [   ] dive into K-Space Sampling function to optimize memory handling
+## 7. References
+[1] SynthSeg: Segmentation of brain MRI scans of any contrast and resolution without retraining
+B. Billot, D.N. Greve, O. Puonti, A. Thielscher, K. Van Leemput, B. Fischl, A.V. Dalca, J.E. Iglesias
+Medical Image Analysis, accepted for publication.
 
-*************************************************************************************
 
-## FaBIAN Simulation Parameters for HASTE Sequence using STA
+## Supp1. FaBIAN Simulation Parameters for HASTE Sequence (details)
 
 - GA (weeks): Gestational Age in weeks. Possible values with STA : [21 - 33] (default:random)
 - B0: Magnetic field strength (T). [1.5, 3] (default: 1.5)
@@ -147,9 +208,16 @@ White Matter Heterogeneity:
 - ClipValue: clip value takes value between 0-1 and define the level of WM heterogeneity that can happen given the GA (optimization done by Andrès)
 
 
-## Modifications to FaBIAN
-- `set_brainproperties`: new function that inputs brain property given field strength B0. This function can be further modify to enable setting random T1/T2 values given tissues, without any physical meaning for data augmentation (test required thoug, especially of epgm formalism).
-- `set_motion`, `motion_transform_mr`: new functions that enables inistialisation of custom motion bounds. `set_motion` takes a motion level in and outputs a matlab struct with motion bounds. This parameter is then input to FaBIAN main function and as argsin of `motion_transform_mr`.
-- `clipvalue`: is now a parameter to FaBIAN_main function.
-- `T1, T2 and clip values` can all be set randomly. 
-- `set_orientation`: new function that checks fetal model affine is compatible with FaBIAN simualation as the function `reorient_volume`is not robust to all types of affine. If user input orientation is not compatible with fetal model affine, new compatible orientation is set, else, continue.
+*************************************************************************************
+
+## Supp2. ToDos:
+- [ x ] Change input fetal brain model handling: input a directory that contains all required file to run the sim (segmentation and pve_X)
+- [ x ] Enable simulation on all kinds of datasets -> use Andrès fsl_clustering script. 
+- [ x ] Prior work on label maps required though (Vlad on it).
+- [ x ] input random brain properties using set_brainproperties.m 
+- [ x ] Generate json file for each simulation listing parameters
+- [ x ] Log the simulation status
+- [   ] dive into K-Space Sampling function to optimize memory handling
+
+*Current Status*: `python run_fabian.py` runs any fetal model (STA, FETA_CHUV, FIDON_CHUV). Prior running the script you should run fsl_clustering to generate the partial volumes. There remain some issues in Matlab given the orientation code of the volume, which FaBIAN cannot robustely manage.
+

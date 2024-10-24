@@ -8,7 +8,7 @@ function [T1_WM,T2_WM,T1_GM,T2_GM,T1_CSF,T2_CSF] = set_brainproperties(B0)
 % 5. column: T1 relaxation time of cerebrospinal fluid
 % 6. column: T2 relaxation time of cerebrospinal fluid
 % 6. column: T2 relaxation time of cerebrospinal fluid
-if B0 == 1.5
+if B0 == 1.5 || B0 == 0.55
     BrainProperties = [ 2761	291	2068	174	4000	2000; ...
                         2509	275	2086	181	4000	2000; ...
                         3054	300	2363	189	4000	2000; ...
@@ -160,5 +160,19 @@ T1_GM = BrainProperties(BrainProperties_index, 3);
 T2_GM = BrainProperties(BrainProperties_index, 4);
 T1_CSF = BrainProperties(BrainProperties_index, 5);
 T2_CSF = BrainProperties(BrainProperties_index, 6);
+
+% MARGAUX BELOW
+% Dependencies of T1 values of tissues given magnetic field can be
+% approximated with delta_B0_exp{1/3}. T2 values remain unchaged
+% Detailed Ref Listed in: https://mriquestions.com/bo-effect-on-t1--t2.html
+if B0 == 0.55
+    T1_WM = T1_WM*0.6934;
+    T1_GM = T1_GM*0.6934;
+    %T1_CSF = T1_CSF*0.6934;
+end
+
+%T1_BG1 =
+%T1_BG2 =
+%T1_BG3 =
 
 end

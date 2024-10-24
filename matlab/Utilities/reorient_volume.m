@@ -39,7 +39,7 @@ if nargin < 4
 elseif nargin > 4
     error('Too many inputs.');
 end
-
+out_axcodes
 % Axes codes of the input volume
 in_axcodes = aff2axcodes(Affine);
 
