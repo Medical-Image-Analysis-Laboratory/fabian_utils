@@ -3,7 +3,7 @@ This repository contains a wrapper to run FaBIAN simulation tool via python. It 
 
 It contains some command-line that are listed below, as well as utility functions for preprocessing fetal brain model inputs prior running fabian (ex: fsl_clustering.py, Authors: Andrés le Boeuf, Hélène Lajoux).
 
-Instructions to run fsl_clustering can be found in section XX.
+Instructions to run fsl_clustering can be found in section 5.
 
 
 ## 1. Commands:
@@ -55,8 +55,8 @@ optional arguments:
 
 Important Note: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_default_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range. I encourage working with the json file rather than parsing optional arguments.
 
-Required libraries: 
-`pip install matlabengine`
+Required libraries: `fabian_utils` run in `gomar` conda environment on the mialtron. All libraries requirements are available in the `requirements_frozen.txt`. Also make sure to install
+`pip install matlabengine` and matlab to run FaBIAN.
 
 ## 2. Available configuration files:
 - haste_default_config.json: the template to the haste sequence. 
@@ -97,13 +97,19 @@ Below you'll find the content of the haste_range_config.json file.
     "FlipAngle": {"range": [150, 180],"default": null},
     "TEeff": {"range": [90, 300],"default": null},
     "GA": {"range": [21, 35],  "default": null},
-    "T1_WM": {"range": [2324,3098], "default": null, "target": 0, "n_subrange": 4, "flat_factor": 0.2},
-    "T1_GM": {"range": [1955,2434], "default": null, "target": 0, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_WM": {"range": [2324,3098], "default": null, "target": 2711, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_GM": {"range": [1955,2434], "default": null, "target": 2195, "n_subrange": 4, "flat_factor": 0.2},
     "T1_CSF": {"range": [3000,4000], "default": null, "target": 4000, "n_subrange": 4, "flat_factor": 0.6},
+    "T1_SKULL": {"range": [1000,1500], "default": null, "target": 1250, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_FAT": {"range": [2500,3000], "default": null, "target": 3500, "n_subrange": 4, "flat_factor": 0.2},
+    "T1_BG": {"range": [3000,4000], "default": null, "target": 1250, "n_subrange": 4, "flat_factor": 0.2},
     "T2_WM": {"range": [0,2000], "default": null, "target": 285, "n_subrange": 4, "flat_factor": 0.2},
     "T2_GM": {"range": [0,2000], "default": null, "target": 181, "n_subrange": 4, "flat_factor": 0.2},
     "T2_CSF": {"range": [0,2000], "default": null, "target": 2000, "n_subrange": 4, "flat_factor": 0.6},
-    "ClipValue": {"range": [0,1], "default": null}
+    "T2_SKULL": {"range": [50,100], "default": null, "target": 75, "n_subrange": 4, "flat_factor": 0.2},
+    "T2_FAT": {"range": [250,350], "default": null, "target": 300, "n_subrange": 4, "flat_factor": 0.2},
+    "T2_BG": {"range": [50,100], "default": null, "target": 75, "n_subrange": 4, "flat_factor": 0.2},
+    "ClipValue": {"range": [0.1,0.9], "default": null}
 }
 
 ```
@@ -155,7 +161,7 @@ usage: run_fsl_clustering.py [-h] --atlas ATLAS [--wm] [--background]
 - `clipvalue`: is now a parameter to FaBIAN_main function.
 - `T1, T2 and clip values` can all be set randomly. 
 - `set_orientation`: new function that checks fetal model affine is compatible with FaBIAN simuulation as the function `reorient_volume`is not robust to all types of affine. If user input orientation is not compatible with fetal model affine, new compatible orientation is set, else, continue. (NOT ROBUST ENOUGH, some bug renains)
-- `set_backgroundproperties`: new function that inputs backgroung properties. It adds labels for 
+- `set_backgroundproperties`: new function that inputs background properties. It adds labels for the skull, fat and pure background segmented from the original atlas T2w image.
 
 
 ## 7. References
@@ -217,7 +223,10 @@ White Matter Heterogeneity:
 - [ x ] input random brain properties using set_brainproperties.m 
 - [ x ] Generate json file for each simulation listing parameters
 - [ x ] Log the simulation status
+- [ x ] Build a dictionary for MR fingerprinting
 - [   ] dive into K-Space Sampling function to optimize memory handling
+- [   ] Solve orientation handling bugs in matlab
+- [   ] simulation with different motion level
 
 *Current Status*: `python run_fabian.py` runs any fetal model (STA, FETA_CHUV, FIDON_CHUV). Prior running the script you should run fsl_clustering to generate the partial volumes. There remain some issues in Matlab given the orientation code of the volume, which FaBIAN cannot robustely manage.
 
