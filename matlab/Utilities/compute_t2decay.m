@@ -29,7 +29,7 @@
 %                              thickness direction                        %
 %           - ref_T1map: reference T1 map of the fetal brain (3D)         %
 %           - ref_T2map: reference T2 map of the fetal brain (3D)         %
-%           - ETL: echo train length, i.e. number of 180°-RF pulses       %
+%           - ETL: echo train length, i.e. number of 180ï¿½-RF pulses       %
 %           - flipAngle: refocusing flip angle (in degrees)               %
 %           - ESP: echo spacing (in ms)                                   %
 %           - sampling_factor: factor by which the fetal brain volume     %
@@ -41,7 +41,7 @@
 %                      every voxel of this volume                         %
 %                                                                         %
 %                                                                         %
-%  Hélène Lajous, 2021-04-20                                              %
+%  Hï¿½lï¿½ne Lajous, 2021-04-20                                              %
 %  helene.lajous@unil.ch                                                  %
 %                                                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,8 +78,11 @@ uT2decay = zeros(size(umap,1), ETL);
 
 % Computation time
 tic
-
-parpool('FaBIAN',24);
+%ajout
+if isempty(gcp('nocreate'))
+    parpool('FaBIAN', 24);
+end
+%parpool('FaBIAN',24);
 parfor (i=1:size(uT2decay,1))
     uT2decay(i, :) = real(cp_cpmg_epg_domain_fplus_fminus(umap(i,1).*90, ETL, umap(i,1).*flipAngle, ESP, umap(i,2), umap(i,3)))/sampling_factor;
 end
@@ -97,5 +100,5 @@ T2decay = reshape(T2decay, [size(Fetal_Brain_upsampled), size(T2decay,2)]);
 % Display computation time
 time2=toc;
 fprintf('Computation time to run EPG simulations in every voxel of the image: 1st parfor %0.5f sec - 2nd for %0.5f seconds.\n', time1, time2);
-
+delete(gcp('nocreate'))
 end
