@@ -55,8 +55,8 @@ optional arguments:
 
 Important Note: When optional arguments are not parse by user, parameters values are assigned from a .json configuration file (ex: haste_default_config.json). Given the .json template, either a default value is assigned or a random value is computed from a specified range. I encourage working with the json file rather than parsing optional arguments.
 
-Required libraries: `fabian_utils` run in `gomar` conda environment on the mialtron. All libraries requirements are available in the `requirements_frozen.txt`. Also make sure to install
-`pip install matlabengine` and matlab to run FaBIAN.
+Required libraries: All libraries requirements are available in the `requirements.txt`. Also make sure to install `pip install matlabengine` and matlab to run FaBIAN.
+
 
 ## 2. Available configuration files:
 - haste_default_config.json: the template to the haste sequence. 
