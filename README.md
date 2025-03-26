@@ -3,9 +3,6 @@ This repository contains a wrapper to run FaBIAN simulation tool via python. It 
 
 It contains some command-line that are listed below, as well as utility functions for preprocessing fetal brain model inputs prior running fabian (ex: fsl_clustering.py, Authors: Andrés le Boeuf, Hélène Lajoux).
 
-Instructions to run fsl_clustering can be found in section 5.
-
-
 ## 1. Commands:
 `python run_fabian.py`
 ```
@@ -20,7 +17,7 @@ mandatory arguments:
   --out OUT                                   Path to the output directory
   --model MODEL                               Path to the atlas fetal brain model directory ../STA/
   --sim SIM                                   ID of the simulation
-  --nruns NRUNS                               Number of run per subject within atlas
+  --nruns NRUNS                               3 to have the 3 orientations
 
 optional arguments:
   -h, --help                                  show this help message and exit
