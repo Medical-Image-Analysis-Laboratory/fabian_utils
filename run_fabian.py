@@ -269,61 +269,62 @@ class Simulation:
                 log.logger.info(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} Missing files in directory: simulation is skipped")
             
     def call_fabian(self,log=Logging):
-        try:
-            eng = matlab.engine.start_matlab()
-            eng.rng("shuffle")
-            eng.addpath('matlab/Utilities')   
-            eng.addpath('matlab/')
             
-            # call fabian
-            imgs = eng.FaBiAN_main_CHUV_DA( self.FetalBrainModelPath,
-                                            self.FetalModel,
-                                            self.SubID,
-                                            self.SesID,
-                                            self.RunID,
-                                            self.Shift_mm,
-                                            self.Orientation,
-                                            self.INU,
-                                            self.SamplingFactor,
-                                            self.B0,
-                                            self.ESP,
-                                            self.ETL,
-                                            self.PhaseOversampling,
-                                            self.SliceThickness,
-                                            self.SliceGap,
-                                            self.FOVRead,
-                                            self.FOVPhase,
-                                            self.BaseResolution,
-                                            self.PhaseResolution,
-                                            self.TR,
-                                            self.TEeff,
-                                            self.FlipAngle,
-                                            self.ACF,
-                                            self.RefLines,
-                                            self.Motion,
-                                            self.Background,
-                                            self.ZIP,
-                                            self.ReconMatrix,
-                                            self.SDnoise,
-                                            self.SimResampling,
-                                            self.SimCrop,
-                                            self.OutputFolder,
-                                            self.WMheterogeneity,
-                                            self.T1_WM,
-                                            self.T2_WM,
-                                            self.T1_GM,
-                                            self.T2_GM,
-                                            self.T1_CSF,
-                                            self.T2_CSF,
-                                            self.ClipValue,
-                                            self.GA)
+            try:
+                eng = matlab.engine.start_matlab()
+                eng.rng("shuffle")
+                eng.addpath('matlab/Utilities')   
+                eng.addpath('matlab/')
+                print(f" Motion Level before calling FABIAN is {self.Motion}")
+                # call fabian
+                imgs = eng.FaBiAN_main_CHUV_DA( self.FetalBrainModelPath,
+                                                self.FetalModel,
+                                                self.SubID,
+                                                self.SesID,
+                                                self.RunID,
+                                                self.Shift_mm,
+                                                self.Orientation,
+                                                self.INU,
+                                                self.SamplingFactor,
+                                                self.B0,
+                                                self.ESP,
+                                                self.ETL,
+                                                self.PhaseOversampling,
+                                                self.SliceThickness,
+                                                self.SliceGap,
+                                                self.FOVRead,
+                                                self.FOVPhase,
+                                                self.BaseResolution,
+                                                self.PhaseResolution,
+                                                self.TR,
+                                                self.TEeff,
+                                                self.FlipAngle,
+                                                self.ACF,
+                                                self.RefLines,
+                                                self.Motion,
+                                                self.Background,
+                                                self.ZIP,
+                                                self.ReconMatrix,
+                                                self.SDnoise,
+                                                self.SimResampling,
+                                                self.SimCrop,
+                                                self.OutputFolder,
+                                                self.WMheterogeneity,
+                                                self.T1_WM,
+                                                self.T2_WM,
+                                                self.T1_GM,
+                                                self.T2_GM,
+                                                self.T1_CSF,
+                                                self.T2_CSF,
+                                                self.ClipValue,
+                                                self.GA)
 
-        except matlab.engine.MatlabExecutionError as matlab_error:
-            log.logger.error(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} MATLAB Execution Error: {matlab_error}")
+            except matlab.engine.MatlabExecutionError as matlab_error:
+                log.logger.error(f"sub-{self.SubID:03}_ses-{self.SesID:02}_run-{self.RunID:02} MATLAB Execution Error: {matlab_error}")
 
-        finally:
-            # Stop matlab engine
-            eng.quit()
+            finally:
+                # Stop matlab engine
+                eng.quit()
             
 #**********************************************************
 
@@ -432,7 +433,7 @@ def get_top_dir(path):
 
     return tail
 
-def get_subs(directory_path):
+def get_subs(directory_path,GA):
     # Check if the input is a valid directory
     if not os.path.isdir(directory_path):
         raise ValueError('Input is not a valid directory.')
@@ -442,7 +443,9 @@ def get_subs(directory_path):
     dir_contents = os.listdir(directory_path)
     if fetal_model == "STA":
          # Extract numbers from folder names using regular expression
-        folder_numbers = [int(re.search(r'STA(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'STA(\d+)', folder)]
+        #folder_numbers = [int(re.search(r'STA(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'STA(\d+)', folder)]
+        #modification to be able to select one GA
+        folder_numbers = [int(match.group(1)) for folder in dir_contents if (match := re.search(r'STA(\d+)', folder)) and int(match.group(1)) == GA]
     else:
         # Extract numbers from folder names using regular expression
         folder_numbers = [int(re.search(r'sub-(\d+)', folder).group(1)) for folder in dir_contents if re.search(r'sub-(\d+)', folder)]
@@ -493,8 +496,10 @@ def random_simulation_physical(args):
         log.logger.info(f"FaBIAN++ Random Simulation sim-{sim_id:03}_ses-{ses_id:02} - Number of runs per subject: {args.nruns}")
 
     # Launch simulation runs (N runs per sub/GA specified in arguments)
-    for run_id in range(1,args.nruns+1):        
-        for sub_id in get_subs(args.model):
+    for run_id in range(1,args.nruns+1): 
+        args.Orientation=run_id
+        print(f" Orientation is {args.Orientation}")
+        for sub_id in get_subs(args.model,args.GA):
 
             if is_simulated(args,sub_id,ses_id,run_id):
                 continue
@@ -523,9 +528,12 @@ def main():
     
     # Parse optional arguments
     args = parse_arguments()
-
+    print(f" GA in the arg is {args.GA}")
     # RANDOM SIMULATION
     random_simulation_physical(args)
 
 if __name__ == "__main__":
     main()
+
+#python run_fabian.py --config code/haste_default_config.json --out prj-004/ --model /home/mroulet/Documents/atlas/STA/ --sim 1 --nruns 3 --TEeff 90 --GA 25 
+#defalt valer pour T2 WM 285 , T2GM 181
