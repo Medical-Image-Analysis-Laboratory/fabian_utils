@@ -63,7 +63,7 @@
 %                                       displacements (in mm) along the   %
 %                                       three main axes for each motion-  %
 %                                       -corrupted slice                  %
-%           - rotation_angle: list of rotation angles (in °) for 3D       %
+%           - rotation_angle: list of rotation angles (in ï¿½) for 3D       %
 %                             rotation in every motion-corrupted slice    %
 %           - rotation_axis: table of rotation axes for 3D rotation in    %
 %                            every motion-corrupted slice                 %
@@ -71,7 +71,7 @@
 %                                              to assign a value to       %
 %                                              every voxel of the 3D      %
 %                                              volume after resampling    %
-%           - ETL: echo train length, i.e. number of 180°-RF pulses       %
+%           - ETL: echo train length, i.e. number of 180ï¿½-RF pulses       %
 %           - flipAngle: refocusing flip angle (in degrees)               %
 %           - ESP: echo spacing (in ms)                                   %
 %           - TEeff: effective echo time (in ms)                          %
@@ -134,7 +134,7 @@
 %           - Sl_Volume:          %
 %                                                                         %
 %                                                                         %
-%  Hélène Lajous, 2023-03-17                                              %
+%  Hï¿½lï¿½ne Lajous, 2023-03-17                                              %
 %  helene.lajous@unil.ch                                                  %
 %                                                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,12 +182,15 @@ function [   KSpace, ...
                                                                  T1_GM, ...
                                                                  T2_GM, ...
                                                                 T1_CSF, ...
-                                                                T2_CSF)
+                                                                T2_CSF, ...
+                                                                ClipValue, ...
+                                                      Fetal_Brain_model_path, ...
+                                                      Background)
 
 % Input check
-if nargin < 42
+if nargin < 45
     error('Missing input(s).');
-elseif nargin > 42
+elseif nargin > 45
     error('Too many inputs.');
 end
 
@@ -249,7 +252,10 @@ for iSlice=1:length(interleavedSlices_index)
                                                                                       T1_GM, ...
                                                                                       T2_GM, ...
                                                                                      T1_CSF, ...
-                                                                                     T2_CSF);
+                                                                                     T2_CSF, ...
+                                                                                    ClipValue, ...
+                                                                                    Fetal_Brain_model_path,...
+                                                                                    Background);
         T2decay_moved = compute_t2decay(Fetal_Brain_rotated_upsampled, ...
                                                       b1map_upsampled, ...
                                                     ref_T1map_rotated, ...
@@ -296,15 +302,45 @@ for iSlice=1:length(interleavedSlices_index)
     % at the center of k-space
     if ACF~=1 && RefLines~=0
         temp = (nPE/2-RefLines/2)+RefLines+1:ACF:nPE;
-        SamplingOrder = fliplr([ACF:ACF:(nPE/2-RefLines/2), (nPE/2-RefLines/2)+1:(nPE/2-RefLines/2)+RefLines, temp(1:round(TEeff/TR-RefLines/2))]);
+        %AJOUT
+       % disp(['temp size: ', num2str(length(temp))]);
+        %disp(['Requested indices: 1:', num2str(round(TEeff/TR-RefLines/2))]);
+        %disp(['TE: ', num2str(TEeff)]);
+        %disp(['TR: ', num2str(TR)]);
+        %disp(['nPE: ', num2str(nPE)]);
+        %disp(['ACF:', num2str(ACF)]);
+        %disp(['RefLines:', num2str(RefLines)]);
+        maxIndex = min(round(TEeff/TR-RefLines/2), length(temp));
+        %SamplingOrder = fliplr([ACF:ACF:(nPE/2-RefLines/2), (nPE/2-RefLines/2)+1:(nPE/2-RefLines/2)+RefLines, temp(1:round(TEeff/TR-RefLines/2))]);
+        SamplingOrder = fliplr([ACF:ACF:(nPE/2-RefLines/2), (nPE/2-RefLines/2)+1:(nPE/2-RefLines/2)+RefLines, temp(1:maxIndex )]);
         clear temp
     elseif ACF==1 && RefLines==0
         temp = nPE/2+1:ACF:nPE;
-        SamplingOrder = fliplr([ACF:ACF:nPE/2, temp(1:round(TEeff/TR))]);
+        %AJOUT
+        %disp(['temp size: ', num2str(length(temp))]);
+        %disp(['Requested indices: 1:', num2str(round(TEeff/TR))]);
+        %disp(['TE: ', num2str(TEeff)]);
+        %disp(['TR: ', num2str(TR)]);
+        %disp(['nPE: ', num2str(nPE)]);
+        %disp(['ACF:', num2str(ACF)]);
+        %disp(['RefLines:', num2str(RefLines)]);
+        maxIndex = min(round(TEeff/TR), length(temp));
+        %SamplingOrder = fliplr([ACF:ACF:nPE/2, temp(1:round(TEeff/TR))]);
+        SamplingOrder = fliplr([ACF:ACF:nPE/2, temp(1:maxIndex)]);
         clear temp
     elseif ACF~=1 && RefLines==0
         temp = nPE/2+ACF:ACF:nPE;
-        SamplingOrder = fliplr([ACF:ACF:nPE/2, temp(1:round(TEeff/TR))]);
+        %ajout
+        %disp(['temp size: ', num2str(length(temp))]);
+        %disp(['Requested indices: 1:', num2str(round(TEeff/TR))]);
+        %disp(['TE: ', num2str(TEeff)]);
+        %disp(['TR: ', num2str(TR)]);
+        %disp(['nPE: ', num2str(nPE)]);
+        %disp(['ACF:', num2str(ACF)]);
+        %disp(['RefLines:', num2str(RefLines)]);
+        maxIndex = min(round(TEeff/TR), length(temp));     
+        %SamplingOrder = fliplr([ACF:ACF:nPE/2, temp(1:round(TEeff/TR))]);
+        SamplingOrder = fliplr([ACF:ACF:nPE/2, temp(1:maxIndex)]);
         clear temp
     end
     % Loop through phase encoding lines
