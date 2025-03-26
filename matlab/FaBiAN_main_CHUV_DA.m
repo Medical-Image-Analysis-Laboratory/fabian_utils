@@ -85,7 +85,7 @@
 %                         sequences                                       %
 %                                                                         %
 %                                                                         %
-%  Hélène Lajous, 2023-02-22                                              %
+%  Hï¿½lï¿½ne Lajous, 2023-02-22                                              %
 %  helene.lajous@unil.ch                                                  %
 %                                                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -602,7 +602,10 @@ InterleavedSlices_index = interleaved_scheme(NbSlices);
                                                        T1_GM, ...
                                                        T2_GM, ...
                                                       T1_CSF, ...
-                                                      T2_CSF);
+                                                      T2_CSF, ...
+                                                      ClipValue, ...
+                                                      FetalBrainModelPath, ...
+                                                      Background);
 
 SqueezeSlVolume = squeeze(SlVolume(:,:,:,30));
 SlVolume_resized = Resize_Volume(SqueezeSlVolume, [round(FOVRead/SimResReo(1)), round(FOVPhaseOversampling/SimResReo(2)), NbSlices]);
